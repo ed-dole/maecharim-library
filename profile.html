@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>โปรไฟล์นักศึกษา</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #fff; }
+    .profile-frame { display: block; width: 100%; height: 100%; border: 0; }
+    .profile-home-btn {
+      position: fixed; top: 0; left: 50%; right: auto; transform: translateX(-50%); z-index: 9999;
+      display: grid; place-items: center; width: 65px; height: 54px;
+      border: 0; border-right: 1px solid rgba(255,255,255,.25);
+      background: #ffffff; color: #111827; text-decoration: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    }
+    .profile-home-btn:hover { background: #f3f4f6; }
+    .profile-home-btn:focus-visible { outline: 3px solid #38bdf8; outline-offset: -3px; }
+    .profile-home-btn svg { width: 29px; height: 29px; fill: currentColor; }
+    @media (max-width: 700px) {
+      .profile-home-btn { left: 50%; right: auto; width: 48px; height: 48px; }
+      .profile-home-btn svg { width: 26px; height: 26px; }
+    }
+  </style>
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <a class="profile-home-btn"
+     href="https://brainboosthub.github.io/amphoe_ok4/index.html"
+     onclick="return backToHome(event)"
+     aria-label="กลับหน้าหลัก"
+     title="Home">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 2.6 2 11h2.2v10.4h6.1v-6.2h3.4v6.2h6.1V11H22L12 2.6Z"/>
+    </svg>
+  </a>
+  <iframe id="profileFrame" class="profile-frame" title="ระบบโปรไฟล์นักศึกษา"
+          allow="clipboard-read; clipboard-write; camera; microphone"
+          allowfullscreen></iframe>
+
+  <script src="profile-config.js?v=20260821-1"></script>
+  <script>
+    function backToHome(event) {
+      if (event) event.preventDefault();
+
+      sessionStorage.removeItem('SSS_PROFILE_ROLLNO');
+
+      if (window.opener && !window.opener.closed) {
+        window.close();
+        return false;
+      }
+
+      window.location.replace('https://brainboosthub.github.io/amphoe_ok4/index.html');
+      return false;
+    }
+
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const rollno = String(params.get('rollno') || sessionStorage.getItem('SSS_PROFILE_ROLLNO') || '')
+        .replace(/\D/g, '').slice(0, 10);
+      const webAppUrl = String(window.STUDENT_PROFILE_WEB_APP_URL || '').trim();
+      const frame = document.getElementById('profileFrame');
+      if (!rollno || !webAppUrl) {
+        window.location.replace('index.html#studentServicesBox');
+        return;
+      }
+
+      // URL ของหน้านี้เป็นแหล่งข้อมูลหลักเสมอ ป้องกัน session เก่าพานักศึกษาผิดคน
+      try { sessionStorage.setItem('SSS_PROFILE_ROLLNO', rollno); } catch (_) {}
+
+      const target = new URL(webAppUrl);
+      target.searchParams.set('rollno', rollno);
+      target.searchParams.set('githubAutoLogin', '1');
+      // บังคับ iframe โหลด session ใหม่ ไม่ใช้หน้า Web App ที่ browser อาจ cache ไว้
+      target.searchParams.set('_profileSession', `${rollno}-${Date.now()}`);
+      frame.src = target.toString();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+/* =========================
+   Student Box
+========================= */
+
+.student-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  padding: 26px;
+  margin-top: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.28),
+      transparent 38%
+    ),
+    linear-gradient(135deg, #2563eb 0%, #1d4ed8 55%, #1e3a8a 100%);
+  border-radius: 24px;
+  box-shadow: 0 14px 35px rgba(30, 64, 175, 0.22);
+  color: #ffffff;
+}
+
+.student-box::before {
+  content: "";
+  position: absolute;
+  width: 170px;
+  height: 170px;
+  right: -55px;
+  bottom: -80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.student-box-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 92px;
+  width: 92px;
+  height: 92px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.student-box-icon i {
+  font-size: 44px;
+  color: #ffffff;
+}
+
+.student-box-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.student-box-content h2 {
+  margin: 0 0 14px;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.student-box-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 0;
+  margin: 0 0 20px;
+  list-style: none;
+}
+
+.student-box-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.student-box-list li i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.17);
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.student-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 145px;
+  min-height: 44px;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.student-login-btn:hover {
+  transform: translateY(-2px);
+  background: #eff6ff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.24);
+  color: #1e40af;
+}
+
+.student-login-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .student-box {
+    align-items: flex-start;
+    gap: 16px;
+    padding: 21px 18px;
+    border-radius: 20px;
+  }
+
+  .student-box-icon {
+    flex-basis: 68px;
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+  }
+
+  .student-box-icon i {
+    font-size: 32px;
+  }
+
+  .student-box-content h2 {
+    font-size: 22px;
+  }
+
+  .student-box-list {
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .student-login-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .student-box {
+    flex-direction: column;
+  }
+
+  .student-box-icon {
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+  }
+}
+
+/* =========================================================
+   Student Box ต่อใต้ Profile Box ในคอลัมน์ด้านขวา
+   ========================================================= */
+
+/* Desktop จอกว้าง: คอลัมน์ขวาลอยอยู่ข้างข่าวสาร */
+.right-info-stack {
+  position: absolute;
+  top: 108px;
+  right: -285px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 255px;
+  max-width: 255px;
+  min-width: 0;
+}
+
+/* ยกเลิก position เดิมของ profileBox เพราะให้ตัวครอบเป็นผู้กำหนดตำแหน่งแทน */
+.right-info-stack > .profile-box {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  flex: 0 0 auto;
+}
+
+/* Student Box เป็นกล่องแนวตั้งขนาดเท่ากับ Profile Box */
+.right-info-stack > .student-box {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 20px 16px;
+  border-radius: 20px;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.right-info-stack .student-box-icon {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  margin: 0 auto;
+  border-radius: 18px;
+}
+
+.right-info-stack .student-box-icon i {
+  font-size: 31px;
+}
+
+.right-info-stack .student-box-content {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.right-info-stack .student-box-content h2 {
+  margin: 0 0 14px;
+  font-size: 22px;
+}
+
+.right-info-stack .student-box-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  margin: 0 0 16px;
+}
+
+.right-info-stack .student-box-list li {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  font-size: 14px;
+}
+
+.right-info-stack .student-login-btn {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Desktop / Notebook: rightInfoStack เป็นคอลัมน์ที่ 3 ของ Grid */
+@media (max-width: 1450px) {
+  .news-bus-layout {
+    display: grid;
+    grid-template-columns: 255px minmax(0, 1fr) 255px;
+    align-items: start;
+    gap: 30px;
+  }
+
+  .right-info-stack {
+    position: relative;
+    top: auto;
+    right: auto;
+    grid-column: 3;
+    display: flex;
+    width: 100%;
+    max-width: 255px;
+    margin: 0;
+  }
+}
+
+/* Tablet แนวนอน: ย้ายคอลัมน์ขวาลงด้านล่างและจัดกึ่งกลาง */
+@media (max-width: 1100px) {
+  .news-bus-layout {
+    grid-template-columns: 255px minmax(0, 1fr);
+  }
+
+  .right-info-stack {
+    grid-column: 1 / -1;
+    width: min(420px, 100%);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet / Mobile: เรียงทุกส่วนเป็นแนวตั้ง */
+@media (max-width: 900px) {
+  .right-info-stack {
+    position: relative;
+    order: 3;
+    width: min(420px, 100%);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .right-info-stack > .student-box {
+    padding: 18px 15px;
+  }
+}
+
+
+/* =========================================================
+   Layout ใหม่: กล่องทั้งหมดต่อใต้ newsSlides
+   ========================================================= */
+
+/* ยกเลิก Layout ด้านซ้าย/ด้านขวาเดิม โดยไม่แตะ JavaScript เดิม */
+#newsBusLayout.news-bus-layout {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#newsBusLayout .news-column {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* news-info-row: 2 แถว — บุคลากรด้านบน / เมนูผลงานด้านล่าง */
+.news-info-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: stretch;
+  gap: 24px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.news-info-row > .boss-box,
+.news-info-row > .student-box {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto;
+  margin: 0 !important;
+  transform: none !important;
+  box-sizing: border-box;
+}
+
+.news-info-row > .boss-box[hidden] { display: none !important; }
+
+.news-info-row > .student-box {
+  display: block;
+  padding: 10px 0 4px;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #1f2937;
+}
+
+.news-info-row > .student-box::before { display: none; }
+
+/* เมนูแถวล่าง: เรียงแนวนอน 1 แถว ไม่ตัดขึ้นแถวใหม่ */
+.setting-menu-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(150px, 1fr);
+  grid-template-rows: 1fr;
+  gap: 22px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 4px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.setting-menu-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px;
+  color: #1f2937;
+  text-align: center;
+  text-decoration: none;
+  transition: transform .2s ease;
+  scroll-snap-align: start;
+}
+
+a.setting-menu-item:hover { transform: translateY(-3px); }
+
+.setting-menu-item .team-link-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 8px;
+}
+
+.setting-menu-item .team-link-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.setting-menu-item .team-link-image i { font-size: 45px; color: #ff684f; }
+.setting-menu-title { font-size: 18px; font-weight: 700; line-height: 1.25; }
+.setting-menu-subtitle { margin-top: 2px; color: #888; font-size: 13px; line-height: 1.3; }
+.setting-menu-loading,
+.setting-menu-empty { min-width: 100%; padding: 32px; color: #64748b; text-align: center; }
+
+/* Profile Box ยังคง ID/ระบบเดิม แต่ไม่ลอยอยู่ด้านข้าง */
+.profile-below-news {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 22px;
+}
+
+.profile-below-news > .profile-box {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: min(100%, 360px) !important;
+  max-width: 360px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+/* Smartphone */
+@media (max-width: 680px) {
+  .news-info-row { gap: 18px; }
+  .setting-menu-grid { grid-auto-columns: minmax(128px, 42vw); gap: 14px; }
+  .setting-menu-item .team-link-image { width: 58px; height: 58px; }
+  .setting-menu-title { font-size: 16px; }
+}

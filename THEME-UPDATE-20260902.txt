@@ -1,0 +1,11 @@
+Modern Aurora Theme update — 2026-09-02
+
+แนวทางการแก้ไข
+- เพิ่ม theme-modern.css เพื่อเปลี่ยนเฉพาะการแสดงผล
+- เพิ่ม class theme-v2 ให้ <body> ของหน้าเว็บ
+- ไม่เปลี่ยน id/class เดิมที่ JavaScript ใช้อ้างอิง
+- ไม่เปลี่ยน URL API / Apps Script
+- ไม่เปลี่ยนฟังก์ชัน Login, CRUD, filter, modal, slider หรือการโหลดข้อมูล
+- ไฟล์ CSS เดิมและ JavaScript เดิมยังอยู่ครบ
+
+หากต้องการกลับธีมเดิมชั่วคราว ให้เอา theme-v2 ออกจาก <body> หรือเอา link theme-modern.css ออกจากหน้า HTML

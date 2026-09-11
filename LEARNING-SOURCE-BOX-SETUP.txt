@@ -1,0 +1,25 @@
+วิธีเชื่อม Box แหล่งเรียนรู้
+
+1) ใน Google Apps Script ของฐานแหล่งเรียนรู้ แก้ doGet ให้รองรับ mode=learningBox:
+
+function doGet(e) {
+  const mode = String((e && e.parameter && e.parameter.mode) || '').trim();
+  if (mode === 'learningBox') {
+    return ContentService
+      .createTextOutput(JSON.stringify(getPublicData()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const page = String((e && e.parameter && e.parameter.page) || 'home').toLowerCase();
+  const t = HtmlService.createTemplateFromFile(page === 'admin' ? 'Dashboard' : 'Index');
+  t.appUrl = ScriptApp.getService().getUrl();
+  return t.evaluate()
+    .setTitle(page === 'admin' ? 'Dashboard แหล่งเรียนรู้' : 'แหล่งเรียนรู้ในพื้นที่')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+2) Deploy เวอร์ชันใหม่ และคัดลอก URL /exec
+3) เปิด learning-source-box.js
+4) แทน PASTE_LEARNING_SOURCE_WEB_APP_EXEC_URL_HERE ด้วย URL /exec
+5) อัปโหลดไฟล์ทั้งหมดขึ้น GitHub Pages

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="รางวัลและเกียรติบัตร Awards and Certificates">
+  <title>รางวัล เกียรติบัตร | Awards and Certificates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="reward.css?v=20260828-2">
+  <link rel="stylesheet" href="admin-subpage.css?v=20260826-1">
+  <link rel="stylesheet" href="reward-manager.css?v=20260826-1">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="reward-page">
+    <div class="reward-container">
+      <div class="reward-topbar admin-subpage-topbar">
+        <button class="admin-manage-data-button" type="button" data-admin-page="reward" hidden>จัดการข้อมูล</button>
+        <a class="reward-back" href="index.html"
+           onclick="return backToHome(event)" aria-label="กลับหน้าหลัก">
+          ← กลับหน้าหลัก
+        </a>
+      </div>
+
+      <header class="reward-heading">
+        <p>Awards and Certificates</p>
+        <h1>รางวัล เกียรติบัตร</h1>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <div class="reward-tools">
+        <label for="rewardSearch">ค้นหา</label>
+        <input id="rewardSearch" type="search"
+               placeholder="ค้นหารางวัล ผู้ได้รับ หน่วยงาน..." autocomplete="off">
+      </div>
+
+      <div id="rewardStatus" class="reward-status" role="status">
+        <span class="reward-spinner" aria-hidden="true"></span>
+        <span>กำลังโหลดรายการรางวัล...</span>
+      </div>
+
+      <section id="rewardGrid" class="reward-grid" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <div id="rewardModal" class="reward-modal" hidden aria-hidden="true">
+    <div class="reward-modal-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="rewardModalTitle">
+      <button id="rewardModalClose" class="reward-modal-close" type="button"
+              aria-label="ปิดหน้าต่าง">×</button>
+      <div id="rewardModalContent"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="reward.js?v=20260826-1"></script>
+  <script src="admin-subpage.js?v=20260826-1"></script>
+  <script src="reward-manager.js?v=20260826-1"></script>
+  <script>
+  function backToHome(event) {
+    if (event) event.preventDefault();
+    if (window.opener && !window.opener.closed) {
+      window.close();
+      return false;
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+      return false;
+    }
+    window.location.href = 'index.html';
+    return false;
+  }
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="รวบรวมสื่อและนวัตกรรมการเรียนรู้">
+  <title>สื่อ/นวัตกรรม | Innovative Media</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="innovation.css?v=20260818-1">
+  <link rel="stylesheet" href="admin-subpage.css?v=20260826-1">
+  <link rel="stylesheet" href="innovation-manager.css?v=20260826-1">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="innovation-page">
+    <div class="innovation-container">
+      <div class="innovation-topbar admin-subpage-topbar">
+        <button class="admin-manage-data-button" type="button" data-admin-page="innovation" hidden>จัดการข้อมูล</button>
+        <a class="innovation-back" href="index.html" aria-label="กลับหน้าหลัก" onclick="return backToHome(event)">← กลับหน้าหลัก</a>
+      </div>
+
+      <header class="innovation-heading">
+        <h1>สื่อ/นวัตกรรม</h1>
+        <span aria-hidden="true"></span>
+        <p>Innovative Media</p>
+      </header>
+
+      <div class="innovation-tools">
+        <label for="innovationTypeFilter">ประเภทสื่อ</label>
+        <select id="innovationTypeFilter" disabled>
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+
+      <div id="innovationStatus" class="innovation-status" role="status">
+        <span class="innovation-spinner" aria-hidden="true"></span>
+        <span>กำลังโหลดรายการ...</span>
+      </div>
+
+      <section id="innovationGrid" class="innovation-grid" aria-live="polite"></section>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="innovation.js?v=20260826-2"></script>
+  <script src="admin-subpage.js?v=20260826-1"></script>
+  <script src="innovation-manager.js?v=20260826-2"></script>
+  <script>
+function backToHome(event) {
+  event.preventDefault();
+
+  // หากเปิดจากแท็บเดิม ให้ปิดแท็บย่อยเมื่อย้อนกลับ
+  if (window.opener && !window.opener.closed) {
+    window.close();
+    return false;
+  }
+
+  // เปิดในแท็บเดียวกัน
+  if (window.history.length > 1) {
+    window.history.back();
+    return false;
+  }
+
+  // กลับหน้าแรกโดยตรง
+  window.location.href = 'index.html';
+  return false;
+}
+</script>
+</body>
+</html>

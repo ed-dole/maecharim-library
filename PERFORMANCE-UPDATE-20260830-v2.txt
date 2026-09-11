@@ -1,0 +1,33 @@
+PERFORMANCE UPDATE v2 - 30/08/2026
+
+1. แก้ student-profile-login.js
+   - ตัด JSONP pre-check 30 วินาทีที่ทำให้เกิด false timeout
+   - ส่งรหัสไป profile.html ทันที ให้ Profile Web App ตรวจเพียงครั้งเดียว
+
+2. เพิ่ม mode=homefast ใน Apps Script หลัก
+   - รวม images/about/news/activity/boss/setting เป็น request เดียว
+   - CacheService 120 วินาที
+
+3. homeSummary
+   - ข้อมูลหนัก cache 120 วินาที
+   - ตัวนับเข้าเว็บไซต์ยังเพิ่มทุก request
+   - หน้าเว็บโหลดหลัง first paint/idle
+
+4. studentServiceTop3
+   - CacheService 300 วินาที
+   - Browser cache 5 นาที
+   - โหลดเมื่อ section ใกล้ viewport
+
+5. site-fast-data.js
+   - localStorage + sessionStorage cache
+   - stale-while-revalidate
+   - แชร์ request เดียวกัน
+   - รับ prefetch ที่เริ่มจาก <head>
+
+6. index.html
+   - preconnect ไป Apps Script/CDN
+   - เริ่ม homefast ตั้งแต่ <head>
+   - external scripts ใช้ defer
+   - content-visibility สำหรับส่วนล่าง
+
+สำคัญ: ต้อง Deploy Apps Script หลักใหม่หลังวาง code.txt รุ่นนี้

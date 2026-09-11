@@ -1,0 +1,22 @@
+PERFORMANCE FAST V1 — 2026-09-02
+
+ปรับโดยยึดระบบเดิม ไม่เปลี่ยน URL API และไม่ลบไฟล์ต้นฉบับที่หน้าอื่นใช้งาน
+
+INDEX.HTML
+- รวม CSS ของ index จาก 18 ไฟล์ เหลือ index-fast.css 1 ไฟล์
+- team-manager.css ไม่โหลดสำหรับผู้ชมทั่วไปอีกต่อไป เพราะ admin-mode.js โหลดเฉพาะตอนเป็นผู้ดูแล
+- รวม JavaScript ของ index จาก 18 ไฟล์ เหลือ index-fast.js 1 ไฟล์
+- team-manager.js ไม่โหลดซ้ำ: เดิม index โหลด 1 ครั้ง และ admin-mode โหลดซ้ำอีกครั้งเมื่อ Login Admin
+- homefast prefetch ตรวจ session/local cache ก่อน ไม่ยิง Apps Script ซ้ำถ้ามี cache ที่ใช้ได้
+- SiteFast ไม่ background-refresh ซ้ำเมื่อ cache ยังสด
+- Best Practice โหลดข้อมูลเมื่อ SECTION ใกล้ viewport แทนการยิง request ทันทีตอนเปิดหน้า
+- Section layout ใช้ข้อมูลจาก homefast ก่อน ลด request แยก 1 ครั้ง และมี fallback แบบเดิม
+
+APP SCRIPT
+- ลบ getBossData_ รุ่นเก่าที่ประกาศชื่อซ้ำและถูกฟังก์ชันรุ่นใหม่ทับ
+- getBossData_ รุ่นที่ใช้งานจริงอ่าน boss!B2:H3 ครั้งเดียว แทนการ getRange หลายครั้ง
+- getSetting อ่าน B2:B3 ครั้งเดียว
+- เพิ่ม endpoint sectionlayout/sectionlayoutadmin ด้วย ScriptProperties (ไม่มี Spreadsheet I/O เพิ่ม)
+- homefast ส่ง sectionLayout มาด้วยเพื่อให้ index ไม่ต้องยิง request แยก
+
+ไฟล์ต้นฉบับอื่นยังอยู่ครบ เพื่อให้ subpage และระบบเดิมทำงานต่อได้

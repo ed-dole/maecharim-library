@@ -1,0 +1,111 @@
+.vision-manager-popup {
+  text-align: left;
+  font-family: "Kanit", "Noto Sans Thai", Arial, sans-serif;
+}
+
+.vision-manager-table-wrap {
+  overflow: auto;
+  max-height: 58vh;
+  border-radius: 10px;
+}
+
+.vision-manager-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.vision-manager-table th,
+.vision-manager-table td {
+  padding: 10px 12px;
+  border: 1px solid #d7dce3;
+  vertical-align: top;
+}
+
+.vision-manager-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #1e293b;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+}
+
+.vision-manager-table th:first-child,
+.vision-manager-table td:first-child {
+  width: 30%;
+}
+
+.vision-manager-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+textarea.vision-manager-input {
+  resize: vertical;
+  min-height: 92px;
+  line-height: 1.55;
+}
+
+.vision-manager-input:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, .12);
+}
+
+.vision-manager-badge {
+  display: inline-block;
+  margin: 4px 0;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.vision-manager-toolbar,
+.vision-manager-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.vision-manager-add,
+.vision-manager-save {
+  min-width: 150px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  font: 600 15px "Kanit", sans-serif;
+  cursor: pointer;
+}
+
+.vision-manager-add { background: #2563eb; }
+.vision-manager-add:hover { background: #1d4ed8; }
+.vision-manager-save { background: #16a34a; }
+.vision-manager-save:hover { background: #15803d; }
+.vision-manager-save:disabled { opacity: .65; cursor: wait; }
+
+.vision-manager-error {
+  min-height: 24px;
+  margin-top: 10px;
+  color: #dc2626;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .vision-manager-table { min-width: 650px; }
+}

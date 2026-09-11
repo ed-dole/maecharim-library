@@ -1,0 +1,762 @@
+/* Profile box — กล่องข้อมูลสมาชิกด้านขวาของข่าวสาร */
+.profile-box{
+  position:absolute;
+  top:108px;
+  right:-285px;
+  width:255px;
+  max-width:255px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 14px 35px rgba(15,23,42,.14);
+  z-index:20;
+}
+
+.profile-cover{
+  height:72px;
+  background:linear-gradient(135deg,#e0f2fe,#eef2ff 55%,#fce7f3);
+}
+
+.profile-body{
+  padding:0 20px 24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+
+.profile-photo{
+  width:92px;
+  height:92px;
+  margin-top:-46px;
+  border:5px solid #fff;
+  border-radius:50%;
+  object-fit:cover;
+  background:#f8fafc;
+  box-shadow:0 8px 20px rgba(15,23,42,.15);
+}
+
+.profile-name{
+  margin:14px 0 2px;
+  color:#0f172a;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.profile-status{
+  margin:0;
+  color:#64748b;
+  font-size:12px;
+}
+
+.profile-stats{
+  width:100%;
+  margin:22px 0 18px;
+  padding:18px 10px;
+  border-top:1px solid #e2e8f0;
+  border-bottom:1px solid #e2e8f0;
+}
+
+.profile-stat{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.profile-stat strong{
+  color:#06b6d4;
+  font-size:30px;
+  font-weight:800;
+  line-height:1;
+}
+
+.profile-stat span{
+  color:#475569;
+  font-size:12px;
+  font-weight:600;
+}
+
+.profile-login-btn{
+  min-width:112px;
+  min-height:38px;
+  padding:9px 20px;
+  border:0;
+  border-radius:999px;
+  background:#06b6d4;
+  color:#fff;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+
+.profile-login-btn:hover{
+  transform:translateY(-1px);
+  background:#0891b2;
+  box-shadow:0 8px 18px rgba(6,182,212,.25);
+}
+
+@media(max-width:1450px){
+  .news-bus-layout{
+    grid-template-columns:255px minmax(0,1fr) 255px;
+  }
+
+  .profile-box{
+    position:relative;
+    top:auto;
+    right:auto;
+    width:100%;
+    max-width:255px;
+    margin:108px 0 0;
+  }
+}
+
+@media(max-width:1100px){
+  .news-bus-layout{
+    grid-template-columns:255px minmax(0,1fr);
+  }
+
+  .profile-box{
+    grid-column:1 / -1;
+    width:min(420px,100%);
+    max-width:420px;
+    min-height:0;
+    margin:0 auto;
+  }
+}
+
+@media(max-width:900px){
+  .profile-box{
+    order:3;
+    width:min(420px,100%);
+    max-width:420px;
+    margin:0 auto;
+  }
+}
+
+.profile-action-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  flex-wrap:wrap;
+  width:100%;
+}
+
+.profile-cart-btn{
+  min-width:112px;
+  min-height:38px;
+  padding:9px 18px;
+  border:1px solid #dbeafe;
+  border-radius:999px;
+  background:#fff;
+  color:#2563eb;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+
+.profile-cart-btn:hover{
+  transform:translateY(-1px);
+  background:#eff6ff;
+  box-shadow:0 8px 18px rgba(37,99,235,.15);
+}
+.edit-profile-title {
+  margin-bottom: 14px;
+}
+
+.edit-profile-preview-wrap {
+  margin: 0 0 18px;
+  text-align: center;
+}
+
+.edit-profile-preview {
+  display: block;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 10px;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+}
+
+.profile-logout-btn{
+  border:0;
+  border-radius:999px;
+  padding:7px 18px;
+  background:#ef4444;
+  color:#fff;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.profile-logout-btn:hover{
+  background:#dc2626;
+}
+
+.profile-logout-btn[hidden]{
+  display:none !important;
+}
+/* =========================================
+   Mobile profile navigation
+========================================= */
+
+.mobile-profile-nav{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  min-width:0;
+}
+
+.mobile-profile-photo{
+  display:block;
+  width:42px;
+  height:42px;
+  min-width:42px;
+  flex:0 0 42px;
+  padding:0;
+  margin:0;
+  border:2px solid #ffffff;
+  border-radius:50%;
+  object-fit:cover;
+  object-position:center;
+  background:#f1f5f9;
+  box-shadow:0 4px 12px rgba(15,23,42,.18);
+  cursor:pointer;
+}
+
+.mobile-profile-point{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-height:38px;
+  padding:7px 14px;
+  border:1px solid #dbeafe;
+  border-radius:999px;
+  background:#ffffff;
+  color:#2563eb;
+  white-space:nowrap;
+}
+
+.mobile-profile-point strong{
+  color:#06b6d4;
+  font-size:16px;
+  font-weight:800;
+  line-height:1;
+}
+
+.mobile-profile-point span{
+  color:#475569;
+  font-size:12px;
+  font-weight:600;
+  line-height:1;
+}
+/* =========================
+   Header Desktop
+========================= */
+
+.nav-wrap{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:20px;
+  min-height:72px;
+}
+
+.nav-wrap > .brand{
+  justify-self:start;
+  min-width:0;
+}
+
+.main-nav{
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:32px;
+  min-width:0;
+}
+
+.nav-profile-actions{
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:nowrap;
+  min-width:0;
+}
+
+.mobile-profile-nav{
+  display:none;
+}
+
+
+.nav-wrap > .profile-cart-btn{
+  justify-self:end;
+  white-space:nowrap;
+}
+@media(max-width:1024px){
+
+  .nav-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .brand{
+    margin-right:auto;
+  }
+
+  #profileCartBtn{
+    display:inline-flex;
+    min-width:auto;
+    padding:8px 12px;
+    white-space:nowrap;
+  }
+
+  .mobile-profile-nav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+}
+/* Desktop */
+@media (min-width:1025px){
+
+  .mobile-profile-nav{
+    display:none !important;
+  }
+
+  #profileCartBtn{
+    display:inline-flex;
+  }
+
+}
+/* =========================
+   Header Mobile / Tablet
+========================= */
+
+@media(max-width:1024px){
+
+  .nav-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    min-height:72px;
+    flex-wrap:nowrap;
+  }
+
+  .nav-wrap > .brand{
+    display:flex;
+    align-items:center;
+    flex:1 1 auto;
+    min-width:0;
+    margin:0;
+  }
+
+  .main-nav{
+    display:none !important;
+  }
+
+  .nav-profile-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:7px;
+    flex:0 0 auto;
+    flex-wrap:nowrap;
+    min-width:0;
+    margin-left:auto;
+  }
+
+  .profile-cart-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    min-width:auto;
+    min-height:36px;
+    padding:7px 11px;
+    white-space:nowrap;
+    font-size:12px;
+  }
+
+  .mobile-profile-nav{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:7px;
+    flex:0 0 auto;
+    flex-wrap:nowrap;
+    white-space:nowrap;
+  }
+
+  .mobile-profile-point{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    flex:0 0 auto;
+    min-height:36px;
+    padding:6px 10px;
+    white-space:nowrap;
+  }
+
+  .mobile-profile-photo{
+    display:block;
+    width:38px;
+    height:38px;
+    min-width:38px;
+    flex:0 0 38px;
+    margin:0;
+    border-radius:50%;
+    object-fit:cover;
+  }
+}
+#profileBox.editing-profile{
+  display:none !important;
+}
+#profileBox.editing-profile,
+/* ===== Z-INDEX ===== */
+
+#profilePopupBackdrop{
+  z-index:9990;
+}
+
+#profileBox{
+  z-index:10000;
+}
+
+#editProfileModal{
+  z-index:10050 !important;
+}
+#profilePopupBackdrop{
+  z-index:9990;
+}
+
+#profileBox{
+  z-index:10000;
+}
+
+.learning-modal{
+  z-index:20000 !important;
+}
+
+.learning-modal-box{
+  position:relative;
+  z-index:20001 !important;
+}
+.profile-cart-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;   /* ระยะห่างระหว่างไอคอนกับข้อความ */
+}
+
+.profile-cart-btn .cart-icon{
+    font-size:18px;
+}
+#profileHours{
+  cursor:pointer;
+  transition:transform 0.2s ease,
+             opacity 0.2s ease;
+}
+
+#profileHours:hover{
+  opacity:0.8;
+  transform:scale(1.05);
+}
+.profile-stat{
+  cursor:pointer;
+  user-select:none;
+}
+
+.profile-stat:hover{
+  opacity:0.8;
+}
+
+
+/* =====================================================
+   Profile controls in the main navigation
+   profileBox has been removed from the page.
+===================================================== */
+.nav-wrap .nav-profile-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 0;
+}
+
+.nav-wrap #profileCartBtn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.nav-wrap #mobileProfilePoint {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 66px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid #fde2a7;
+  border-radius: 999px;
+  background: #fff5d9;
+  color: #9a5800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-wrap #mobileProfilePoint strong,
+.nav-wrap #mobileProfilePoint span {
+  display: inline !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  line-height: 1 !important;
+}
+
+.nav-wrap #mobileProfilePoint strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.nav-wrap #mobileProfilePoint span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.nav-wrap #mobileProfilePhoto {
+  display: block !important;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .nav-wrap .nav-profile-actions {
+    gap: 7px;
+  }
+
+  .nav-wrap #profileCartBtn {
+    padding: 8px 10px;
+  }
+
+  .nav-wrap #mobileProfilePoint {
+    min-width: 58px;
+    height: 30px;
+    padding: 0 9px;
+  }
+
+  .nav-wrap #mobileProfilePhoto {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-wrap #profileCartBtn {
+    font-size: 0;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .nav-wrap #profileCartBtn .cart-icon,
+  .nav-wrap #profileCartBtn #profileCartCount {
+    font-size: 14px;
+  }
+
+  .nav-wrap #profileCartBtn #profileCartCount::after {
+    content: '';
+  }
+
+  .nav-wrap #mobileProfilePoint span {
+    display: none !important;
+  }
+
+  .nav-wrap #mobileProfilePoint {
+    min-width: 34px;
+    width: 34px;
+    padding: 0;
+  }
+}
+
+
+/* =====================================================
+   Edit Profile Modal layout — 2026-08-28
+   Preview under header, centered save button, logout footer
+===================================================== */
+#editProfileModal .edit-profile-modal-box{
+  width:min(620px, calc(100vw - 32px));
+  max-width:620px;
+  max-height:90vh;
+  padding:0;
+  overflow:hidden;
+}
+
+#editProfileModal .edit-profile-header{
+  position:relative;
+  top:auto;
+  flex:0 0 auto;
+  margin:0;
+  padding:18px 22px;
+  border-bottom:1px solid #e5e7eb;
+  background:#fff;
+}
+
+#editProfileModal .edit-profile-title{
+  margin:0;
+}
+
+#editProfileModal .edit-profile-preview-wrap{
+  flex:0 0 auto;
+  margin:0;
+  padding:16px 22px 4px;
+  text-align:center;
+  background:#fff;
+}
+
+#editProfileModal .edit-profile-form{
+  min-height:0;
+  flex:1 1 auto;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:16px 22px 22px;
+}
+
+#editProfileModal .edit-profile-actions{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:20px;
+}
+
+#editProfileModal .edit-profile-actions .btn-green{
+  min-width:140px;
+}
+
+#editProfileModal .edit-profile-footer{
+  flex:0 0 auto;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:16px 22px 18px;
+  border-top:1px solid #e5e7eb;
+  background:#fff;
+}
+
+#editProfileModal .edit-profile-logout-btn{
+  min-width:150px;
+  padding:10px 22px;
+}
+
+@media(max-width:600px){
+  #editProfileModal .edit-profile-modal-box{
+    width:calc(100vw - 20px);
+    max-width:calc(100vw - 20px);
+  }
+  #editProfileModal .edit-profile-header{
+    padding:15px 16px;
+  }
+  #editProfileModal .edit-profile-preview-wrap{
+    padding:14px 16px 2px;
+  }
+  #editProfileModal .edit-profile-form{
+    padding:14px 16px 18px;
+  }
+  #editProfileModal .edit-profile-actions .btn-green,
+  #editProfileModal .edit-profile-logout-btn{
+    width:100%;
+  }
+  #editProfileModal .edit-profile-footer{
+    padding:14px 16px 16px;
+  }
+}
+
+
+/* =====================================================
+   Login success effect — 2026-08-28
+   ใช้หลังลงทะเบียนสำเร็จ เพื่อเน้น mobileProfilePhoto
+===================================================== */
+.nav-wrap #mobileProfilePhoto.profile-login-success-effect {
+  transform-origin: center;
+  animation: mobileProfileLoginSuccess 1.45s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform, box-shadow, filter;
+}
+
+@keyframes mobileProfileLoginSuccess {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    filter: brightness(1);
+  }
+  22% {
+    transform: scale(1.34) rotate(-5deg);
+    box-shadow:
+      0 0 0 7px rgba(34, 197, 94, .20),
+      0 0 0 14px rgba(34, 197, 94, .10),
+      0 10px 26px rgba(34, 197, 94, .34);
+    filter: brightness(1.08);
+  }
+  44% {
+    transform: scale(.94) rotate(3deg);
+  }
+  64% {
+    transform: scale(1.16) rotate(-2deg);
+    box-shadow:
+      0 0 0 5px rgba(59, 130, 246, .18),
+      0 0 0 10px rgba(59, 130, 246, .08),
+      0 8px 22px rgba(59, 130, 246, .28);
+  }
+  82% {
+    transform: scale(.98);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-wrap #mobileProfilePhoto.profile-login-success-effect {
+    animation: none;
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, .18), 0 2px 8px rgba(15, 23, 42, 0.18);
+  }
+}

@@ -1,0 +1,619 @@
+/* =====================================================
+   Learning Base — Apps Script original style
+   Scoped to avoid changing the existing GitHub website
+===================================================== */
+
+#learningBaseModule,
+#learningBaseModule *{box-sizing:border-box}
+
+#learningBaseModule{
+  width:100%;
+  margin:0;
+  padding:24px 0 60px;
+  font-family:'Prompt','Kanit',Arial,sans-serif;
+  background:#f5f7fb;
+  color:#111827;
+}
+
+#learningBaseModule .learning-container{
+  width:100%;
+  max-width:1900px;
+  margin:auto;
+  padding:0 24px;
+}
+
+/* Top navigation buttons moved into the website nav-wrap */
+.learning-nav-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-left:auto;
+}
+
+.learning-nav-actions button,
+.learning-nav-actions a{
+  border:0;
+  border-radius:14px;
+  padding:10px 16px;
+  font-family:'Prompt','Kanit',Arial,sans-serif;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  text-decoration:none;
+  white-space:nowrap;
+  background:#2563eb;
+  color:#fff;
+}
+
+.learning-nav-actions .learning-light{background:#fff;color:#2563eb;border:1px solid #dbeafe}
+.learning-nav-actions .learning-teacher{background:#111827;color:#fff}
+.learning-nav-actions button:hover,
+.learning-nav-actions a:hover{opacity:.9}
+
+/* Buttons */
+#learningBaseModule button,
+.learning-modal button{
+  border:0;
+  border-radius:14px;
+  padding:10px 16px;
+  font-family:'Prompt','Kanit',Arial,sans-serif;
+  font-weight:700;
+  cursor:pointer;
+  background:#2563eb;
+  color:#fff;
+}
+
+#learningBaseModule .btn-light,.learning-modal .btn-light{background:#fff;color:#2563eb}
+#learningBaseModule .btn-green,.learning-modal .btn-green{background:#16a34a}
+#learningBaseModule .btn-orange,.learning-modal .btn-orange{background:#f97316}
+#learningBaseModule .btn-red,.learning-modal .btn-red{background:#dc2626}
+#learningBaseModule .btn-dark,.learning-modal .btn-dark{background:#111827}
+
+/* Tabs */
+#learningBaseModule .learning-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+#learningBaseModule .learning-tabs > div{
+  flex-wrap:wrap;
+}
+
+#learningBaseModule .learning-tabs button{
+  background:#e5e7eb;
+  color:#111827;
+}
+
+#learningBaseModule .learning-tabs button.active{
+  background:#2563eb;
+  color:#fff;
+}
+
+#learningBaseModule #baseFilter{
+  width:260px;
+  padding:12px 14px;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  margin:0;
+  font-family:inherit;
+  font-size:15px;
+  background:#fff;
+  color:#111827;
+}
+
+/* Section heading */
+#learningBaseModule .learning-section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+#learningBaseModule .learning-section-title h2{
+  margin:0;
+  font-size:clamp(24px,3vw,30px);
+  color:#111827;
+}
+
+/* Activity cards — same dimensions and visual style as Apps Script */
+#learningBaseModule .learning-grid,
+#learningBaseModule #activityGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:22px;
+  width:100%;
+}
+
+#learningBaseModule .learning-card{
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 10px 25px rgba(15,23,42,.08);
+  border:1px solid #e5e7eb;
+}
+
+#learningBaseModule .learning-card img{
+  width:100%;
+  display:block;
+  cursor:pointer;
+}
+#learningBaseModule .learning-card-actions{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-top:16px;
+}
+
+#learningBaseModule .learning-card-actions button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+#learningBaseModule .learning-card-body{padding:16px}
+
+#learningBaseModule .learning-tag{
+  display:inline-block;
+  padding:5px 10px;
+  margin-bottom:8px;
+  background:#e0f2fe;
+  color:#0369a1;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+#learningBaseModule .learning-title{
+  margin:4px 0;
+  font-size:18px;
+  font-weight:800;
+  line-height:1.4;
+  color:#111827;
+}
+
+#learningBaseModule .learning-muted{
+  color:#64748b;
+  font-size:14px;
+  line-height:1.6;
+}
+
+#learningBaseModule .learning-detail{
+  white-space:pre-line;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  overflow:hidden;
+}
+
+#learningBaseModule .learning-actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+
+/* History */
+#learningBaseModule .learning-list-item{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:10px;
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+}
+
+#learningBaseModule table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+}
+
+#learningBaseModule th,
+#learningBaseModule td{
+  padding:12px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+  vertical-align:top;
+}
+
+#learningBaseModule th{background:#e0f2fe;color:#075985}
+#learningBaseModule .teacher-img{width:42px!important;height:42px!important;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px}
+#learningBaseModule .learning-hidden{display:none!important}
+
+/* Modals */
+.learning-modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(15,23,42,.55);
+  font-family:'Prompt','Kanit',Arial,sans-serif;
+  color:#111827;
+}
+
+.learning-modal-box{
+  width:100%;
+  max-width:620px;
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:24px;
+  padding:22px;
+  box-shadow:0 20px 50px rgba(0,0,0,.25);
+}
+
+.learning-modal-box h2,
+.learning-modal-box h3{color:#111827}
+
+.learning-modal input,
+.learning-modal textarea,
+.learning-modal select{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  margin:6px 0 12px;
+  font-family:inherit;
+  font-size:15px;
+  background:#fff;
+  color:#111827;
+}
+
+.learning-modal textarea{min-height:100px}
+.learning-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Detail slider */
+.detail-slider{width:100%;height:360px;border-radius:22px;overflow:hidden;background:#e5e7eb;margin-bottom:18px;position:relative}
+.detail-slide{display:none;width:100%;height:100%}
+.detail-slide.active{display:block}
+.detail-slide img{width:100%;height:100%;object-fit:cover}
+.detail-dots{display:flex;justify-content:center;gap:8px;margin-top:-34px;margin-bottom:22px;position:relative;z-index:5}
+.detail-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.65)}
+.detail-dot.active{background:#fff}
+.detail-info h2{margin:0 0 10px;font-size:28px}
+.detail-info .line{padding:10px 0;border-bottom:1px solid #e5e7eb;font-size:17px;line-height:1.7}
+
+/* Cart */
+.learning-cart-summary{padding:14px 16px;margin-bottom:12px;background:#fff;border:1px solid #e5e7eb;border-radius:18px;font-weight:800;box-shadow:0 5px 16px rgba(15,23,42,.05)}
+.learning-cart-item{
+    display:grid;
+    grid-template-columns:180px minmax(0,1fr);
+    align-items:center;
+    gap:12px;              /* เดิม 16px ลดเหลือ 12 หรือ 8 */
+}
+.learning-cart-image{
+    width:180px;
+    height:120px;
+    object-fit:cover;
+    border-radius:16px;
+    justify-self:start;
+}
+.learning-cart-info{
+    min-width:0;
+    justify-self:start;
+    width:100%;
+}
+.learning-cart-title{margin-bottom:4px;font-size:17px;font-weight:800;color:#111827}
+.learning-cart-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.learning-confirm-btn{background:#16a34a!important}
+.learning-delete-btn{background:#dc2626!important}
+.learning-cart-image{width:180px;height:120px;object-fit:cover;border-radius:16px;background:#e5e7eb}
+
+@media(min-width:1600px){
+  #learningBaseModule .learning-container{max-width:1800px}
+  #learningBaseModule .learning-grid,
+  #learningBaseModule #activityGrid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+}
+
+@media(max-width:860px){
+  .learning-nav-actions{order:4;width:100%;justify-content:center;padding:8px 0 4px}
+  .learning-nav-actions button,.learning-nav-actions a{font-size:12px;padding:8px 11px}
+}
+
+@media(max-width:650px){
+  #learningBaseModule{padding-top:18px}
+  #learningBaseModule .learning-container{padding:0 14px}
+  #learningBaseModule .learning-tabs > div{align-items:stretch!important}
+  #learningBaseModule .learning-tabs > div > div:first-child{width:100%;display:grid!important;grid-template-columns:1fr 1fr}
+  #learningBaseModule .learning-tabs > div > div:last-child{width:100%;margin-left:0!important}
+  #learningBaseModule #baseFilter{width:100%!important;margin-top:10px}
+  #learningBaseModule .learning-grid,
+  #learningBaseModule #activityGrid{grid-template-columns:1fr}
+  .learning-row{grid-template-columns:1fr}
+  .detail-slider{height:230px}
+  .learning-cart-item{grid-template-columns:1fr}
+  .learning-cart-image{width:100%;height:190px;order:-1}
+}
+.learning-score-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  min-height:38px;
+  padding:10px 16px;
+
+  border:1px solid #bbf7d0;
+  border-radius:14px;
+
+  background:#22c55e;
+  color:#fff;
+
+  font-family:'Prompt','Kanit',Arial,sans-serif;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.2;
+
+  white-space:nowrap;
+}
+
+.learning-score-badge[hidden]{
+  display:none !important;
+}
+
+/* Student registration only view */
+.learning-modal-close-row{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.learning-modal-close{
+  width:42px;
+  height:42px;
+  padding:0!important;
+  border-radius:999px!important;
+  font-size:20px!important;
+  line-height:1!important;
+}
+
+.learning-login-actions,
+.learning-register-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.learning-login-actions #newRegisterBtn{
+  margin-left:auto;
+}
+
+.learning-register-actions{
+  justify-content:flex-end;
+  margin-top:16px;
+}
+
+.learning-file-input{
+  padding:9px!important;
+  background:#f8fafc!important;
+}
+
+.learning-file-input::file-selector-button{
+  margin-right:10px;
+  padding:9px 14px;
+  border:0;
+  border-radius:10px;
+  background:#2563eb;
+  color:#fff;
+  font-family:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.learning-photo-help{
+  margin:-6px 0 10px;
+  color:#64748b;
+  font-size:12px;
+}
+
+.learning-photo-preview-wrap{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:8px 0 4px;
+  padding:10px;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#f8fafc;
+}
+
+.learning-photo-preview-wrap[hidden]{
+  display:none!important;
+}
+
+.learning-photo-preview{
+  width:92px;
+  height:92px;
+  border-radius:14px;
+  object-fit:cover;
+  background:#e2e8f0;
+}
+
+.learning-photo-remove{
+  background:#dc2626!important;
+}
+/* ==================================================
+   Popup แก้ไขโปรไฟล์
+================================================== */
+
+.edit-profile-modal-box{
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    max-width: 620px;
+    max-height: 90vh;
+    overflow: hidden;   /* ไม่ให้ทั้ง Popup เลื่อน */
+    padding: 0;         /* ย้าย padding ไปไว้แต่ละส่วน */
+}
+.edit-profile-header{
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+.edit-profile-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 44px 0 22px;
+  color: #111827;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.edit-profile-title i {
+  color: #5b2a86;
+}
+
+.edit-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-profile-form label {
+  margin-top: 8px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.edit-profile-form .learning-input {
+  width: 100%;
+  min-height: 50px;
+  padding: 11px 14px;
+  border: 1px solid #cfd6df;
+  border-radius: 15px;
+  background: #ffffff;
+  color: #111827;
+  font-family: "Kanit", sans-serif;
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.edit-profile-form textarea.learning-input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.edit-profile-form .learning-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.edit-profile-file-box {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #cfd6df;
+  border-radius: 15px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.edit-profile-file-box input[type="file"] {
+  display: block;
+  width: 100%;
+  font-family: "Kanit", sans-serif;
+}
+
+.edit-profile-file-box input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-family: "Kanit", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-profile-help {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.edit-profile-preview-wrap {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.edit-profile-preview {
+  display: block;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 10px;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+}
+
+.edit-profile-remove-photo {
+  width: auto;
+  padding: 8px 17px;
+  border: 0;
+  border-radius: 999px;
+}
+
+.edit-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.edit-profile-actions .btn-green {
+  min-width: 100px;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 14px;
+  font-family: "Kanit", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 600px) {
+  .edit-profile-modal-box {
+    width: calc(100% - 20px);
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .edit-profile-title {
+    margin-top: 38px;
+    font-size: 21px;
+  }
+
+  .edit-profile-actions .btn-green {
+    width: 100%;
+  }
+}
+/* ปุ่มใส่ตะกร้าในหน้ารายละเอียด */
+#detailAddCartBtn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    width:100%;
+    max-width:220px;
+
+    margin:24px auto 0;
+    box-sizing:border-box;
+}

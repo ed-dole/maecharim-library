@@ -1,0 +1,35 @@
+Performance update for index.html — 2026-08-30
+
+สิ่งที่ปรับ
+1) เพิ่ม site-fast-data.js เป็นตัวกลางสำหรับแชร์ request, deduplicate request, session cache และ lazy-load
+2) เพิ่ม API mode=homefast ใน Code_AppsScript_FBpost.txt
+   - รวมข้อมูลหน้าแรกที่อ่านจาก Spreadsheet หลัก: images / about / news / activity / boss / setting
+   - เปิด Spreadsheet หลัก 1 ครั้ง และอ่านข้อมูลแบบเป็นช่วง เพื่อลด Spreadsheet service calls
+3) aboutPages เดิมถูกยิงซ้ำจาก announcement.js และ site-content.js -> ใช้ข้อมูล homefast ชุดเดียว
+4) images, news, activity, boss และ setting -> ใช้ homefast ชุดเดียว
+5) home summary backend ใช้ CacheService 60 วินาทีสำหรับค่าที่คำนวณหนัก แต่ยังเพิ่ม websiteVisitCount ทุกครั้งเหมือนเดิม
+6) Facebook / learning areas / cliproom / shopactivity ใช้ lazy-load เมื่อเข้าใกล้ viewport
+7) Facebook / learning areas / shopactivity ใช้ session cache ชั่วคราวสำหรับผู้ใช้ทั่วไป
+   - เมื่อมี mysiteAdminToken จะไม่ใช้ session cache เพื่อให้ Admin เห็นข้อมูลใหม่
+8) Cliproom ใช้ lazy-load + session cache และเอา query timestamp ที่บังคับโหลดใหม่ทุกครั้งออก
+9) เอา bus-box.js ออกจาก index.html เพราะหน้า index ปัจจุบันไม่มี Bus UI ที่ใช้งานจริง แต่คง bus-box.css ไว้เพราะยังใช้ style กับ news-bus-layout
+10) เพิ่ม preconnect ไป script.google.com และ script.googleusercontent.com
+
+ไฟล์ที่แก้
+- index.html
+- site-fast-data.js (ไฟล์ใหม่)
+- script.js
+- announcement.js
+- site-content.js
+- activity-box.js
+- boss-box.js
+- learning-base.js
+- fbpost-box.js
+- learning-source-box.js
+- cliproom-box.js
+- shopactivity-box.js
+- Code_AppsScript_FBpost.txt
+
+สำคัญ
+- เพื่อให้ได้ความเร็วสูงสุด ต้องอัปเดต Apps Script ด้วย Code_AppsScript_FBpost.txt แล้ว Deploy Web App เวอร์ชันใหม่
+- ถ้ายังไม่ได้ Deploy backend ใหม่ หน้า GitHub ยังทำงานได้ เพราะ site-fast-data.js มี fallback กลับไปเรียก API เดิม แต่จะยังไม่ได้ประโยชน์จาก homefast เต็มที่

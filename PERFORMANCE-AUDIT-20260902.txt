@@ -1,0 +1,70 @@
+PERFORMANCE AUDIT — 2026-09-02
+================================
+ไฟล์ฐานที่ตรวจ:
+- tambol_prototype1-main (2).zip
+- หลัก(10).zip
+
+จุดที่พบว่าซ้ำ/ชน/ไม่คุ้มเวลา
+1) index.html โหลด team-manager.js โดยตรง และ admin-mode.js โหลด team-manager.js ซ้ำอีกครั้งเมื่อเข้าสถานะ Admin
+   - ผล: IIFE ถูกประมวลผลซ้ำ, event listener ของ Team ถูกผูกซ้ำได้, และเพิ่ม request ที่ไม่จำเป็น
+   - แก้: ผู้ชมทั่วไปไม่โหลด team-manager.js / team-manager.css; admin-mode โหลดเฉพาะเมื่อ Login Admin
+
+2) code.txt มี function getBossData_() ประกาศซ้ำ 2 ครั้ง
+   - JavaScript/Apps Script ใช้ตัวประกาศท้าย ทำให้ตัวแรกถูกทับและสร้างความสับสน/เสี่ยงแก้ผิดฟังก์ชัน
+   - แก้: ลบรุ่นเก่า เหลือรุ่นเดียว
+
+3) getBossData_ รุ่นที่ใช้งานเดิมเรียก getRange หลายครั้ง (B2,C2,D2,G2,G3,H2)
+   - แก้: อ่าน boss!B2:H3 เป็นก้อนเดียว แล้วแยกค่าจาก array
+
+4) getSetting() อ่าน B2 และ B3 แยก 2 service calls
+   - แก้: อ่าน B2:B3 ครั้งเดียว
+
+5) admin-section-guide.js เรียก ?mode=sectionlayout ทุกครั้งและใช้ cache:no-store
+   แต่ Apps Script ชุดที่แนบไม่มี route sectionlayout/sectionlayoutadmin
+   - ผล: request เพิ่ม + fallback defaults / บันทึกมีโอกาส Invalid mode
+   - แก้: เพิ่ม backend ด้วย ScriptProperties และรวม sectionLayout ใน homefast
+   - หน้า index ใช้ homefast ก่อน จึงไม่ต้องยิง request แยก
+
+6) homefast prefetch ใน <head> เดิมยิง Apps Script ทุกครั้ง แม้ local/session cache ยังใช้ได้
+   - ผล: หน้า revisit ยังแย่ง bandwidth/connection กับ CSS และรูปภาพ
+   - แก้: ตรวจ cache ก่อน; cold load ยัง prefetch เร็วเหมือนเดิม
+
+7) SiteFast เดิม เมื่อ cache ยังสดก็ยัง background-refresh Apps Script อีก
+   - แก้: cache สด = ใช้ทันทีและไม่ยิง network; cache stale จึง refresh เงียบ ๆ
+
+8) Best Practice อยู่ต่ำกว่าหน้าจอแต่เดิมยิง API ทันทีตอน DOM พร้อม
+   - แก้: โหลดเมื่อ SECTION อยู่ใกล้ viewport 1000px
+
+9) index.html มี local stylesheet 19 requests และ local JavaScript 20 requests
+   - แก้ CSS: 19 -> 3 local requests (คง cascade order รอบ inline styles)
+   - แก้ JS: 20 -> 2 local requests (app-config.js + index-fast.js)
+   - ไฟล์เดิมยังอยู่ครบเพื่อให้ subpages ใช้ต่อ
+
+ขนาด static ที่อ้างอิงจาก index.html (ไม่รวม external CDN)
+BEFORE
+- CSS: 19 requests, raw 171,748 bytes, gzip proxy รวม ~43,642 bytes
+- JS : 20 requests, raw 154,698 bytes, gzip proxy รวม ~48,521 bytes
+
+AFTER
+- CSS: 3 requests, raw 168,957 bytes, gzip proxy รวม ~34,494 bytes
+- JS : 2 requests, raw 144,635 bytes, gzip proxy รวม ~33,728 bytes
+
+หมายเหตุเรื่องชื่อฟังก์ชันซ้ำใน frontend
+- หลายไฟล์มีชื่อ helper เหมือนกัน เช่น esc, render, load, api, normalize
+- ส่วนใหญ่ถูกห่อด้วย (() => { ... })(); จึงมี scope แยกและไม่ชนกัน
+- ไม่ควรรวมโดยตัด IIFE ออก เพราะจะทำให้ชื่อเหล่านี้ชนจริง
+- index-fast.js ที่สร้างใหม่จึง concat ทั้ง IIFE ตามลำดับเดิม โดยไม่แกะ scope
+
+การติดตั้ง
+1) GitHub: ใช้โฟลเดอร์ tambol_prototype1-main จาก ZIP optimized
+2) Apps Script: แทน code.txt จาก ZIP optimized และคงไฟล์อื่นเดิม
+3) Deploy Apps Script Web App เป็นเวอร์ชันใหม่
+4) อัปโหลด GitHub แล้วทดสอบแบบ Hard Reload 1 ครั้ง
+
+ระบบที่ตั้งใจไม่เปลี่ยน
+- URL API เดิม
+- Admin Login เดิม
+- Student Login / Profile URL เดิม
+- CRUD เดิม
+- Contact/Vision managers เดิม
+- หน้า subpage และไฟล์ CSS/JS เดิมยังคงอยู่ครบ

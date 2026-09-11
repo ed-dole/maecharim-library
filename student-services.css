@@ -1,0 +1,43 @@
+.student-services-section{position:relative;overflow:hidden;padding:30px 0 42px;background:#f6f7f9}
+.student-services-section::before{position:absolute;top:-64px;right:-6%;width:65%;height:135px;border-radius:50%;background:rgba(255,255,255,.56);content:"";transform:rotate(3deg)}
+.student-services-box{position:relative;z-index:1;width:100%}
+.student-services-box>h2{margin:0;padding-bottom:12px;border-bottom:1px solid #cfd1d5;color:#111827;font-size:clamp(28px,3vw,38px);font-weight:700;line-height:1.25;text-align:center}
+.student-services-grid{display:grid;grid-template-columns:minmax(350px,1.12fr) repeat(2,minmax(290px,1fr));align-items:stretch;gap:clamp(22px,3vw,40px);padding:50px 4px 4px}
+
+/* เฉพาะกล่อง student-services-account: รูปแบบตามหน้า Login ตัวอย่าง */
+.student-services-account{display:grid;grid-template-columns:minmax(118px,40%) minmax(0,60%);min-width:0;min-height:390px;overflow:hidden;border:4px solid #41b99c;border-radius:18px 18px 18px 18px;background:#fff;box-shadow:0 12px 35px rgba(34,44,69,.09)}
+.student-services-account-photo-wrap{min-width:0;overflow:hidden;background:#eef2f4}
+.student-services-account-image{display:block;width:100%;height:100%;min-height:390px;margin:0;object-fit:cover;object-position:center top}
+.student-services-login-panel{display:flex;min-width:0;flex-direction:column;justify-content:center;padding:22px 20px 20px;background:#fff}
+.student-services-login-brand{display:grid;justify-items:center;text-align:center}
+.student-services-login-logo{display:block;width:72px;height:72px;margin:0 auto 12px;border-radius:50%;object-fit:contain;background:#fff}
+.student-services-login-logo:not([src]),.student-services-login-logo[src=""]{visibility:hidden}
+.student-services-login-title{max-width:100%;color:#cf13dd;font-size:clamp(19px,1.75vw,24px);font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.student-services-login-subtitle{min-height:1.4em;margin-top:4px;color:#259905;font-size:clamp(15px,1.35vw,19px);font-weight:400;line-height:1.25;overflow-wrap:anywhere}
+.student-services-login-divider{width:100%;height:1px;margin:24px 0 19px;background:#e7e7e7}
+.student-services-login{display:grid;justify-items:center;gap:12px;width:100%}
+.student-services-login label{color:#4b4b4b;font-size:15px;font-weight:400;line-height:1.25;text-align:center}
+.student-services-login input{width:min(100%,224px);height:38px;padding:4px 8px;border:1px solid #dedede;border-radius:2px;outline:none;background-color:#fff;background-image:repeating-linear-gradient(90deg,transparent 0,transparent 18px,#e0e0e0 18px,#e0e0e0 20px,transparent 20px,transparent 22px);background-size:22px 100%;color:#202020;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:19px;letter-spacing:8px;line-height:1;text-align:left;transition:border-color .2s ease,box-shadow .2s ease}
+.student-services-login input:focus{border-color:#41b99c;box-shadow:0 0 0 3px rgba(65,185,156,.17)}
+.student-services-login button{min-width:112px;min-height:43px;margin-top:5px;padding:8px 24px;border:0;border-radius:14px;background:#08ad7d;box-shadow:0 2px 5px rgba(0,0,0,.08);color:#fff;cursor:pointer;font:inherit;font-size:18px;font-weight:500;line-height:1}
+.student-services-login button:hover,.student-services-login button:focus-visible{background:#079d72;outline:3px solid rgba(8,173,125,.2);outline-offset:2px}
+.student-services-login button:disabled{cursor:wait;opacity:.65}
+.student-service-card{display:flex;min-width:0;min-height:390px;flex-direction:column;justify-content:space-between;overflow:hidden;padding:25px 16px 12px;border-radius:16px;background:#fff;box-shadow:0 12px 35px rgba(34,44,69,.09);color:#172036;text-align:center;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease}
+.student-service-card:hover,.student-service-card:focus-visible{transform:translateY(-5px);box-shadow:0 18px 42px rgba(34,44,69,.15)}
+.student-service-card-heading{padding:0 8px 26px}
+.student-service-card-heading strong{display:block;color:#26324d;font-size:clamp(42px,4vw,56px);font-weight:700;line-height:1}
+.student-service-card-heading span{display:block;margin-top:8px;color:#172036;font-size:clamp(18px,1.8vw,20px);font-weight:400;line-height:1.25}
+.student-service-ranking-title{margin:-16px 0 8px;color:#4b5563;font-size:14px;font-weight:500;line-height:1.3;text-align:center}
+.student-service-board{overflow:hidden;border-radius:17px;background:#26324d}
+.student-service-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:#fff}
+.student-service-tabs button{margin:0;padding:8px 5px 7px;border:0;border-radius:17px 17px 0 0;background:#c9c9c9;color:#fff;cursor:pointer;font:inherit;font-size:16px;transition:background .2s ease,transform .2s ease}
+.student-service-tabs button:hover,.student-service-tabs button:focus-visible{background:#6b7280;outline:2px solid #fff;outline-offset:-3px}
+.student-service-tabs .is-active{background:#26324d}
+.student-service-ranking{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 15px;padding:20px 18px 10px;color:#fff;font-size:16px;line-height:1.25;text-align:left}
+.student-service-ranking span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.student-service-ranking b{color:rgba(255,255,255,.62);font-weight:500}
+.student-service-ranking-status{grid-column:1/-1;padding:15px 0;color:rgba(255,255,255,.72);text-align:center}
+.student-service-open{display:inline-flex;min-width:130px;min-height:37px;align-items:center;justify-content:center;margin:7px auto 13px;padding:5px 22px;border-radius:999px;background:#dce0e8;color:#26324d;font-family: "Kanit", sans-serif;font-size:20px;text-decoration:none}
+@media(max-width:1120px){.student-services-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.student-services-account{grid-column:1/-1;width:min(100%,680px);min-height:385px;margin:0 auto}.student-services-account-image{min-height:385px}}
+@media(max-width:680px){.student-services-section{padding:25px 0 34px}.student-services-grid{grid-template-columns:1fr;gap:18px;padding-top:30px}.student-services-account{grid-column:auto;width:100%;grid-template-columns:minmax(105px,38%) minmax(0,62%);min-height:360px;margin:0}.student-services-account-image{min-height:360px}.student-services-login-panel{padding:18px 14px}.student-services-login-logo{width:62px;height:62px;margin-bottom:10px}.student-services-login-divider{margin:20px 0 16px}.student-services-login input{width:min(100%,220px)}.student-service-card{min-height:355px;padding-top:32px}}
+@media(max-width:420px){.student-services-account{grid-template-columns:36% 64%;min-height:340px;border-width:3px}.student-services-account-image{min-height:340px}.student-services-login-panel{padding:14px 10px}.student-services-login-logo{width:54px;height:54px}.student-services-login-title{font-size:17px}.student-services-login-subtitle{font-size:14px}.student-services-login label{font-size:13px}.student-services-login input{height:36px;font-size:17px;letter-spacing:6px}.student-services-login button{min-width:100px;min-height:40px;font-size:16px}}

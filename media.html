@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="คลังสื่อการสอน Teaching Materials Repository">
+  <title>คลังสื่อการสอน | Teaching Materials Repository</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="media.css?v=20260820-2">
+  <link rel="stylesheet" href="admin-subpage.css?v=20260826-1">
+  <link rel="stylesheet" href="media-manager.css?v=20260826-1">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="media-page">
+    <div class="media-container">
+      <div class="media-topbar admin-subpage-topbar">
+        <button class="admin-manage-data-button" type="button" data-admin-page="media" hidden>จัดการข้อมูล</button>
+        <a class="media-back" href="index.html"
+           onclick="return backToHome(event)" aria-label="กลับหน้าหลัก">
+          ← กลับหน้าหลัก
+        </a>
+      </div>
+
+      <header class="media-heading">
+        <p>Teaching Materials Repository</p>
+        <h1>คลังสื่อการสอน</h1>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <section class="media-filters" aria-label="ตัวกรองคลังสื่อการสอน">
+        <label>
+          <span>เรื่อง</span>
+          <select id="mediaTitleFilter" disabled>
+            <option value="">ทั้งหมด</option>
+          </select>
+        </label>
+        <label>
+          <span>วิชา</span>
+          <select id="mediaSubjectFilter" disabled>
+            <option value="">ทั้งหมด</option>
+          </select>
+        </label>
+        <label>
+          <span>ชั้น</span>
+          <select id="mediaGradeFilter" disabled>
+            <option value="">ทั้งหมด</option>
+          </select>
+        </label>
+        <label>
+          <span>ประเภทสื่อ</span>
+          <select id="mediaTypeFilter" disabled>
+            <option value="">ทั้งหมด</option>
+          </select>
+        </label>
+        <label class="media-search-label">
+          <span>ค้นหาทั้งหมด</span>
+          <input id="mediaSearch" type="search"
+                 placeholder="ค้นหาเรื่อง วิชา ชั้น ประเภท หรือเจ้าของผลงาน..."
+                 autocomplete="off">
+        </label>
+      </section>
+
+      <div id="mediaStatus" class="media-status" role="status">
+        <span class="media-spinner" aria-hidden="true"></span>
+        <span>กำลังโหลดคลังสื่อการสอน...</span>
+      </div>
+
+      <section id="mediaGrid" class="media-grid" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="media.js?v=20260826-1"></script>
+  <script src="admin-subpage.js?v=20260826-1"></script>
+  <script src="media-manager.js?v=20260826-1"></script>
+  <script>
+  function backToHome(event) {
+    if (event) event.preventDefault();
+
+    if (window.opener && !window.opener.closed) {
+      window.close();
+      return false;
+    }
+
+    if (window.history.length > 1) {
+      window.history.back();
+      return false;
+    }
+
+    window.location.href = 'index.html';
+    return false;
+  }
+  </script>
+</body>
+</html>

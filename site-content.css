@@ -1,0 +1,29 @@
+#heroKickerText,
+#heroTitleText,
+#heroDescriptionText,
+#footerDescription,
+#footerOrganization,
+#footerAddress,
+#footerPhone {
+  white-space: pre-line;
+}
+
+.footer-organization {
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.site-search-hit {
+  position: relative;
+  z-index: 3;
+  border-radius: 7px;
+  outline: 4px solid rgba(250, 204, 21, .9);
+  outline-offset: 5px;
+  background-color: rgba(254, 240, 138, .3) !important;
+  animation: siteSearchPulse 1.1s ease-in-out 2;
+}
+
+@keyframes siteSearchPulse {
+  0%, 100% { outline-color: rgba(250, 204, 21, .9); }
+  50% { outline-color: rgba(249, 115, 22, .95); }
+}
