@@ -110,11 +110,12 @@
       setText('contactAddress', data.address),
       setText('contactPhone', data.phone),
       setSocial('contactFacebook', data.facebook),
-      setSocial('contactLine', data.line)
+      setSocial('contactLine', data.line),
+      setSocial('contactYoutube', data.youtube)
     ];
 
     const socials = document.getElementById('contactSocials');
-    if (socials) socials.hidden = !(visible[3] || visible[4]);
+    if (socials) socials.hidden = !(visible[3] || visible[4] || visible[5]);
 
     const coordinate = text(data.coordinate);
     const wrap = document.getElementById('contactMapWrap');
