@@ -2537,30 +2537,60 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   const cardsPerPage = () => window.innerWidth <= 620 ? 1 : window.innerWidth <= 900 ? 2 : 3;
 
-  async function resolveCliproomExecUrl() {
-    const mainApi = String(MAIN_API_URL || '').trim();
-    if (!mainApi) throw new Error('ไม่พบ URL ของ Apps Script หลัก');
-
-    const url = new URL(mainApi);
-    url.searchParams.set('mode', 'cliproomexec');
-    url.searchParams.set('_t', String(Date.now()));
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      cache: 'no-store',
-      credentials: 'omit'
-    });
-    const result = await response.json();
-    if (!response.ok || result?.success === false) {
-      throw new Error(result?.message || `HTTP ${response.status}`);
+  function resolveCliproomExecUrl() {
+      const mainApi = String(MAIN_API_URL || '').trim();
+      if (!mainApi) return Promise.reject(new Error('ไม่พบ URL ของ Apps Script หลัก'));
+  
+      return new Promise((resolve, reject) => {
+        const callbackName = '__cliproomExecResolver_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        const script = document.createElement('script');
+        let timer = null;
+  
+        const cleanup = () => {
+          if (timer) clearTimeout(timer);
+          try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+        };
+  
+        window[callbackName] = result => {
+          try {
+            if (!result || result.success === false) {
+              throw new Error((result && result.message) || 'อ่าน URL Cliproom จากชีตไม่สำเร็จ');
+            }
+            const execUrl = String(result.url || '').trim();
+            if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) {
+              throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
+            }
+            cleanup();
+            resolve(execUrl);
+          } catch (error) {
+            cleanup();
+            reject(error);
+          }
+        };
+  
+        try {
+          const url = new URL(mainApi);
+          url.searchParams.set('mode', 'cliproomexec');
+          url.searchParams.set('callback', callbackName);
+          url.searchParams.set('_t', String(Date.now()));
+          script.src = url.toString();
+          script.async = true;
+          script.onerror = () => {
+            cleanup();
+            reject(new Error('เชื่อมต่อ Apps Script หลักไม่สำเร็จ'));
+          };
+          timer = setTimeout(() => {
+            cleanup();
+            reject(new Error('Apps Script หลักใช้เวลาตอบกลับนานเกินไป'));
+          }, 15000);
+          document.head.appendChild(script);
+        } catch (error) {
+          cleanup();
+          reject(error);
+        }
+      });
     }
-
-    const execUrl = String(result?.url || '').trim();
-    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) {
-      throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
-    }
-    return execUrl;
-  }
 
   function render() {
     if (!courses.length) {
@@ -2657,8 +2687,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function receive(payload) {
     clearTimeout(window.__cliproomTimeout);
-    if (payload?.success && Array.isArray(payload.courses)) writeCache(payload);
-    courses = payload?.success && Array.isArray(payload.courses) ? payload.courses : [];
+    if (payload?.success && Array.isArray(payload.courses)) {
+      writeCache(payload);
+      courses = payload.courses;
+      if (!courses.length) {
+        track.innerHTML = '<div class="cliproom-loading">ยังไม่มีหลักสูตรที่เปิดใช้งาน</div>';
+        const dots = document.getElementById('cliproomDots');
+        if (dots) dots.innerHTML = '';
+        return;
+      }
+    } else {
+      courses = [];
+    }
     render();
     restart();
   }
