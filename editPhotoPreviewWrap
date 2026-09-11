@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="เว็บไซต์ร้านหนังสือสไตล์ภาพประกอบ พร้อมใช้งานบน GitHub Pages" />
+  <title>Book Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20260719-7" />
+  <link rel="stylesheet" href="learning-base.css?v=20260720-3" />
+  <link rel="stylesheet" href="learning-source-box.css?v=20260720-1" />
+  <link rel="stylesheet" href="bus-box.css?v=20260720-1" />
+  <link rel="stylesheet" href="profile-box.css?v=20260721-2" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <div class="announcement">
+    <div class="container announcement-inner">
+      <a class="brand brand-light" href="#home" aria-label="Book Store home">
+        <span class="brand-icon">B</span>
+        <span>book store</span>
+      </a>
+      <p>"ห้องสมุดแหล่งความรู้ คือคู่การศึกษา หนังสือมีคุณค่า ดั่งตำราที่เราเรียน"</p>
+    </div>
+  </div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+
+    <a class="brand" href="#home">
+      <span class="brand-icon">O</span>
+      <span>orange</span>
+    </a>
+
+    <nav class="main-nav" aria-label="เมนูหลัก">
+      <a href="#newsSlider">ข่าวสาร</a>
+      <a href="#learningSourceBox">แหล่งเรียนรู้</a>
+      <a href="#featured">หนังสือที่น่าสนใจ</a>
+      <a href="#learningBaseModule">กิจกรรม</a>
+    </nav>
+
+    <!-- ไม่ต้องเพิ่มปุ่มใหม่ตรงนี้ -->
+
+    <div id="mobileProfileNav"
+         class="mobile-profile-nav"
+         aria-label="ข้อมูลสมาชิก">
+    </div>
+
+  </div>
+</header>
+
+  <main>
+    <section id="home" class="hero">
+      <div class="hero-overlay"></div>
+      <div class="container hero-content">
+        <div class="eyebrow">อ่าน • เรียนรู้ • สร้างแรงบันดาลใจ</div>
+        <h1>ดีไซน์พื้นที่แห่ง<br>การเรียนรู้ของคุณ</h1>
+        <p>ค้นพบหนังสือ ภาพประกอบ และเรื่องราวที่ช่วยเปิดมุมมองใหม่ในทุกวัน</p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="#featured">ดูหนังสือแนะนำ</a>
+          <a class="text-link" href="#categories">ดูทุกหมวดหมู่ <span>→</span></a>
+        </div>
+      </div>
+      <div class="floating-dot dot-1"></div>
+      <div class="floating-dot dot-2"></div>
+      <div class="floating-dot dot-3"></div>
+    </section>
+
+<!-- รถโมบาย + ข่าวสาร: แสดงแนวเดียวกัน -->
+<section id="news" class="news-section">
+  <div class="container">
+    <div id="newsBusLayout" class="news-bus-layout bus-is-hidden">
+
+      <aside id="busBox" class="bus-box" hidden aria-live="polite">
+        <div class="bus-visual">
+          <img
+            class="bus-image"
+            src="https://static.wixstatic.com/media/a503e5_823e4678ac4746edbe89fbcdacde2a47~mv2.png"
+            alt="รถโมบายส่งเสริมการอ่าน">
+        </div>
+
+        <div id="busContent" class="bus-content">
+          <div class="bus-loading">กำลังโหลดกิจกรรมรถโมบาย...</div>
+        </div>
+
+        <div id="busControls" class="bus-controls" hidden>
+          <button id="busPrev" class="bus-nav" type="button" aria-label="กิจกรรมก่อนหน้า">‹</button>
+          <div id="busDots" class="bus-dots"></div>
+          <button id="busNext" class="bus-nav" type="button" aria-label="กิจกรรมถัดไป">›</button>
+        </div>
+      </aside>
+
+      <div class="news-column">
+        <div class="section-heading">
+          <div>
+            <h2>ข่าวสาร</h2>
+          </div>
+        </div>
+
+        <div id="newsSlider" class="news-slider">
+          <div id="newsSlides" class="news-slides">
+            <div class="news-loading">กำลังโหลดข่าวสาร...</div>
+          </div>
+          <button id="newsPrev" class="news-arrow news-prev" type="button" aria-label="ข่าวก่อนหน้า">‹</button>
+          <button id="newsNext" class="news-arrow news-next" type="button" aria-label="ข่าวถัดไป">›</button>
+          <div id="newsDots" class="news-dots"></div>
+        </div>
+      </div>
+
+      <aside id="profileBox" class="profile-box" aria-live="polite">
+        <div class="profile-cover"></div>
+        <div class="profile-body">
+          <img
+            id="profilePhoto"
+            class="profile-photo"
+            src="https://static.wixstatic.com/media/a503e5_9064df4bf13044dab24382c889fa7d87~mv2.png"
+            alt="รูปผู้ใช้งาน">
+
+          <h3 id="profileName" class="profile-name">ยังไม่ได้เข้าสู่ระบบ</h3>
+          <p id="profileStatus" class="profile-status">สมาชิกเว็บไซต์ห้องสมุด</p>
+
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <strong id="profileHours">0</strong>
+              <span>ชั่วโมงกิจกรรม</span>
+            </div>
+          </div>
+
+          <div class="profile-action-row">
+            <button id="profileLoginBtn" class="profile-login-btn" type="button">Login</button>
+            <button id="profileCartBtn" class="profile-cart-btn" type="button">🛒 ตะกร้า</button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- แหล่งเรียนรู้ในพื้นที่: Box แยก ไม่กระทบระบบเดิม -->
+<section id="learningSourceBox" class="lsb-section">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">แหล่งเรียนรู้ในพื้นที่</span>
+        <h2>แหล่งเรียนรู้ผ่านแผนที่</h2>
+      </div>
+     <a id="lsbOpenAll"
+   class="lsb-open-all"
+   href="learning.html">
+  ดูรายการทั้งหมด
+</a>
+    </div>
+
+    <div class="lsb-box">
+      <div class="lsb-map-panel">
+        <div id="lsbMapStage" class="lsb-map-stage">
+          <div class="lsb-loading">กำลังโหลดแผนที่...</div>
+        </div>
+      </div>
+
+      <div class="lsb-slider-panel">
+        <button id="lsbPrev" class="lsb-arrow lsb-prev" type="button" aria-label="รายการก่อนหน้า">‹</button>
+        <div id="lsbViewport" class="lsb-viewport">
+          <div id="lsbTrack" class="lsb-track">
+            <div class="lsb-loading">กำลังโหลดรายการ...</div>
+          </div>
+        </div>
+        <button id="lsbNext" class="lsb-arrow lsb-next" type="button" aria-label="รายการถัดไป">›</button>
+        <div id="lsbDots" class="lsb-dots"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- หนังสือที่น่าอ่าน: อยู่ Box ถัดลงมาจากข่าวสาร -->
+<section id="featured" class="featured-section recommended-books-section">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">หนังสือที่น่าอ่าน</span>
+        <h2>หนังสือที่น่าสนใจ</h2>
+      </div>
+
+    </div>
+
+    <div class="book-showcase">
+      <button id="bookPrev" class="book-slider-arrow book-slider-prev" type="button" aria-label="หนังสือก่อนหน้า">‹</button>
+      <div id="bookSlides" class="book-slider-stage">
+        <div class="book-loading">กำลังโหลดหนังสือ...</div>
+      </div>
+      <button id="bookNext" class="book-slider-arrow book-slider-next" type="button" aria-label="หนังสือถัดไป">›</button>
+      <div id="bookDots" class="book-slider-dots"></div>
+    </div>
+
+<!-- ปุ่มเปิด/ปิดหนังสือทั้งหมด -->
+<div class="book-toggle-wrap">
+<button id="toggleBookListBtn"
+        class="book-list-toggle"
+        type="button"
+        aria-expanded="false">
+
+    <span class="book-toggle-icon">
+        <i class="fa fa-eye-slash"></i>
+    </span>
+
+    <span class="book-toggle-text">
+        หนังสือทั้งหมด
+    </span>
+
+</button>
+</div>
+
+    <div id="allBooksPanel" class="all-books-panel" hidden>
+      <div id="allBooksGrid" class="all-books-grid"></div>
+    </div>
+  </div>
+</section>
+
+<section id="learningBaseModule"><div class="learning-container">
+
+  <div class="learning-tabs">
+<div style="display:flex;align-items:center;width:100%;gap:10px">
+
+  <div style="display:flex;gap:10px">
+    <button class="active"
+      onclick="LearningBase.showPage('activitiesPage',this)">
+      กิจกรรมทั้งหมด
+    </button>
+
+    <button
+      onclick="LearningBase.showPage('historyPage',this)">
+      กิจกรรมที่ยืนยันแล้ว
+    </button>
+  </div>
+
+  <div style="margin-left:auto">
+    <select
+      id="baseFilter"
+      onchange="LearningBase.filterActivities()"
+      style="width:260px"
+    >
+      <option value="">ทุกฐานการเรียนรู้</option>
+    </select>
+  </div>
+
+</div>
+    
+  </div>
+
+  <section id="activitiesPage">
+    <div class="learning-section-title">
+      <h2>กิจกรรมการเรียนรู้ตลอดชีวิต</h2>
+      <button onclick="LearningBase.loadActivities()">รีเฟรช</button>
+    </div>
+    <div id="activityGrid" class="learning-grid"></div>
+  </section>
+
+  <section id="historyPage" class="learning-hidden">
+    <div class="learning-section-title">
+      <h2>กิจกรรมที่ยืนยันแล้ว</h2>
+      <button onclick="LearningBase.loadHistory()">รีเฟรช</button>
+    </div>
+    <div id="historyList"></div>
+  </section>
+</div>
+</section>
+
+<section id="categories" class="category-section">
+  <div class="container">
+    <div class="section-heading light-heading">
+      <div><span class="section-kicker">เลือกอ่านตามใจ</span><h2>หมวดหมู่ยอดนิยม</h2></div>
+    </div>
+    <div class="category-grid">
+      <a href="#" class="category-card"><span>01</span><h3>วรรณกรรม</h3><p>นิยาย เรื่องสั้น และงานเขียนร่วมสมัย</p></a>
+      <a href="#" class="category-card"><span>02</span><h3>ศิลปะและดีไซน์</h3><p>แรงบันดาลใจสำหรับนักสร้างสรรค์</p></a>
+      <a href="#" class="category-card"><span>03</span><h3>เด็กและเยาวชน</h3><p>เรื่องราวสนุกที่เสริมจินตนาการ</p></a>
+    </div>
+  </div>
+</section>
+
+  </main>
+
+  <footer id="contact" class="footer">
+    <div class="container footer-inner">
+      <div><a class="brand brand-light" href="#home"><span class="brand-icon">B</span><span>book store</span></a><p>พื้นที่เล็ก ๆ สำหรับคนรักหนังสือและงานออกแบบ</p></div>
+      <div><h4>ติดต่อเรา</h4><p>hello@bookstore.example</p><p>โทร. 02-000-0000</p></div>
+      <div><h4>ติดตามข่าวสาร</h4><form class="subscribe-form"><input type="email" placeholder="อีเมลของคุณ" required><button>สมัคร</button></form></div>
+    </div>
+    <div class="copyright">© 2026 Book Store. All rights reserved.</div>
+  </footer>
+
+  <script src="script.js?v=20260719-7"></script>
+  <script src="learning-source-box.js?v=20260720-1"></script>
+  <script src="bus-box.js?v=20260720-1"></script>
+
+<!-- Student Modal -->
+<div id="studentModal" class="learning-modal">
+  <div class="learning-modal-box">
+    <div class="learning-modal-close-row">
+      <button
+        class="btn-red learning-modal-close"
+        type="button"
+        onclick="LearningBase.closeModal('studentModal')"
+        aria-label="ปิดหน้าต่าง">
+        ×
+      </button>
+    </div>
+
+    <!-- ส่วน Login จะแสดงเฉพาะเมื่อเปิดจากปุ่ม accountBtn -->
+    <div id="loginSection">
+      <h2>👤 Login</h2>
+
+      <label for="loginPhone">เบอร์โทร</label>
+      <input id="loginPhone" maxlength="10" inputmode="numeric">
+
+      <div class="learning-login-actions">
+        <button type="button" onclick="LearningBase.studentLogin()">Login</button>
+        <button
+          id="newRegisterBtn"
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.showRegisterBox()">
+          ลงทะเบียนผู้ใช้ใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- เมื่อกดลงทะเบียน จะแสดงเฉพาะส่วนนี้ ไม่มีส่วน Login -->
+    <div id="registerBox" style="display:none">
+      <h2>👤 ลงทะเบียนสมาชิก</h2>
+
+      <label for="stuFullname">ชื่อ-นามสกุล</label>
+      <input id="stuFullname" autocomplete="name">
+
+      <label for="stuPhone">เบอร์โทร</label>
+      <input id="stuPhone" maxlength="10" inputmode="numeric" autocomplete="tel">
+
+      <label for="stuAddress">ที่อยู่</label>
+      <textarea id="stuAddress" autocomplete="street-address"></textarea>
+
+      <label for="stuPhoto">แนบรูปภาพ</label>
+      <input
+        id="stuPhoto"
+        class="learning-file-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif">
+      <div class="learning-photo-help">รองรับ JPG, PNG, WEBP หรือ GIF ขนาดไม่เกิน 5 MB</div>
+      <div id="stuPhotoPreviewWrap" class="learning-photo-preview-wrap" hidden>
+        <img id="stuPhotoPreview" class="learning-photo-preview" alt="ตัวอย่างรูปที่แนบ">
+        <button type="button" class="learning-photo-remove" onclick="LearningBase.clearStudentPhoto()">ลบรูป</button>
+      </div>
+
+      <div class="learning-register-actions">
+        <button
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.registerStudent()">
+          ลงทะเบียน
+        </button>
+      </div>
+    </div>
+
+<div id="logoutBox" style="margin-top:15px;display:none">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+    <button
+      class="btn-green"
+      onclick="LearningBase.showRegisterBox()">
+      ลงทะเบียน
+    </button>
+
+    <button
+      class="btn-orange"
+      onclick="LearningBase.closeStudentModal()">
+      ออกจากระบบ
+    </button>
+
+  </div>
+</div>
+  </div>
+</div>
+<!-- =====================================================
+     Popup แก้ไขโปรไฟล์
+     แยกจาก Popup ลงทะเบียนเดิมทั้งหมด
+====================================================== -->
+<div id="editProfileModal" class="learning-modal">
+  <div class="learning-modal-box edit-profile-modal-box">
+
+    <button
+      class="learning-modal-close"
+      type="button"
+      aria-label="ปิด"
+      onclick="LearningBase.closeEditProfile()">
+      ×
+    </button>
+
+    <h2 class="edit-profile-title">
+      <i class="fa fa-user" aria-hidden="true"></i>
+      แก้ไขโปรไฟล์
+    </h2>
+
+
+    <div class="edit-profile-form">
+
+      <label for="editFullname">ชื่อ-นามสกุล</label>
+      <input
+        id="editFullname"
+        class="learning-input"
+        type="text"
+        autocomplete="name">
+
+      <label for="editPhone">เบอร์โทร</label>
+      <input
+        id="editPhone"
+        class="learning-input"
+        type="tel"
+        maxlength="10"
+        inputmode="numeric"
+        autocomplete="tel">
+
+      <label for="editAddress">ที่อยู่</label>
+      <textarea
+        id="editAddress"
+        class="learning-input"
+        rows="4"></textarea>
+
+      <label for="editPhoto">แนบรูปภาพ</label>
+
+      <div class="edit-profile-file-box">
+        <input
+          id="editPhoto"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif">
+      </div>
+
+      <small class="edit-profile-help">
+        รองรับ JPG, PNG, WEBP หรือ GIF ขนาดไม่เกิน 5 MB
+      </small>
+
+      <div class="edit-profile-actions">
+        <button
+          id="saveEditProfileBtn"
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.saveEditProfile()">
+          บันทึก
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- Cart Modal -->
+<div id="cartModal" class="learning-modal">
+  <div class="learning-modal-box">
+    <h2>🛒 ตะกร้ากิจกรรม</h2>
+    <div id="cartList"></div>
+    <button class="btn-red" onclick="LearningBase.closeModal('cartModal')">ปิด</button>
+  </div>
+</div>
+
+<div id="detailModal" class="learning-modal">
+  <div class="learning-modal-box" style="max-width:900px">
+
+    <!-- ปุ่ม X -->
+    <button
+      class="detail-close-btn"
+      type="button"
+      aria-label="ปิด"
+      onclick="LearningBase.closeModal('detailModal')">
+      ×
+    </button>
+
+    <!-- เนื้อหา -->
+    <div id="detailContent"></div>
+
+    <!-- Footer -->
+    <div class="detail-footer">
+
+      <button id="detailAddCartBtn" type="button">
+        <i class="bi bi-bag-plus-fill"></i>
+        ใส่ตะกร้า
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Popup รายละเอียดหนังสือ -->
+<div id="bookDetailModal" class="book-detail-modal" aria-hidden="true">
+  <div class="book-detail-box" role="dialog" aria-modal="true" aria-labelledby="bookDetailTitle">
+    <button id="bookDetailClose" class="book-detail-close" type="button" aria-label="ปิด">×</button>
+    <div id="bookDetailContent"></div>
+  </div>
+</div>
+
+  <script src="learning-base.js?v=20260720-3"></script>
+  <script src="profile-box.js?v=20260721-2"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const breakpoint = window.matchMedia('(max-width: 1024px)');
+
+  const mobileProfileNav =
+    document.getElementById('mobileProfileNav');
+
+  const profileBox =
+    document.getElementById('profileBox');
+
+  const profileBody =
+    profileBox?.querySelector('.profile-body');
+
+  const profileStats =
+    profileBox?.querySelector('.profile-stats');
+
+  const profileStat =
+    profileBox?.querySelector('.profile-stat');
+
+  const profileActionRow =
+    profileBox?.querySelector('.profile-action-row');
+
+const profileCartBtn =
+  document.getElementById('profileCartBtn');
+
+const elements = [
+  document.getElementById('profileHours'),
+  document.getElementById('profileLoginBtn'),
+  document.getElementById('profileName'),
+  document.getElementById('profilePhoto')
+].filter(Boolean);
+
+  /*
+   * เก็บตำแหน่งเดิมของแต่ละ Element
+   * เพื่อให้ย้ายกลับได้เมื่อเปิดบนคอมพิวเตอร์
+   */
+  const originalPositions = new Map();
+
+  elements.forEach(function (element) {
+    originalPositions.set(element, {
+      parent: element.parentNode,
+      nextSibling: element.nextSibling
+    });
+  });
+
+  function moveToMobileHeader() {
+    if (!mobileProfileNav) return;
+
+elements.forEach(function (element) {
+    mobileProfileNav.appendChild(element);
+});
+
+if (profileCartBtn) {
+    mobileProfileNav.prepend(profileCartBtn);
+}
+
+    if (profileBox) {
+      profileBox.hidden = true;
+      profileBox.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function restoreToProfileBox() {
+    elements.forEach(function (element) {
+      if (profileCartBtn) {
+    profileCartBtn.remove();
+}
+      const position = originalPositions.get(element);
+
+      if (!position?.parent) return;
+
+      if (
+        position.nextSibling &&
+        position.nextSibling.parentNode === position.parent
+      ) {
+        position.parent.insertBefore(
+          element,
+          position.nextSibling
+        );
+      } else {
+        position.parent.appendChild(element);
+      }
+    });
+
+    if (profileBox) {
+const navWrap =
+    document.querySelector(".nav-wrap");
+
+if (profileCartBtn) {
+    navWrap.appendChild(profileCartBtn);
+}
+
+profileBox.hidden = false;
+      profileBox.removeAttribute('aria-hidden');
+    }
+  }
+
+  function updateProfileLocation(event) {
+    if (event.matches) {
+      moveToMobileHeader();
+    } else {
+      restoreToProfileBox();
+    }
+  }
+
+  updateProfileLocation(breakpoint);
+
+  if (typeof breakpoint.addEventListener === 'function') {
+    breakpoint.addEventListener(
+      'change',
+      updateProfileLocation
+    );
+  } else {
+    breakpoint.addListener(updateProfileLocation);
+  }
+});
+</script>
+<!-- เมนูด้านล่างสำหรับสมาร์ทโฟนและแท็บเล็ต -->
+<nav id="mobileBottomNav"
+     class="mobile-bottom-nav"
+     aria-label="เมนูด้านล่าง">
+
+  <a href="#home" class="mobile-bottom-link active">
+    <i class="fa fa-home" aria-hidden="true"></i>
+    <span>Home</span>
+  </a>
+
+  <a href="#newsSlider" class="mobile-bottom-link">
+    <i class="fa fa-newspaper-o" aria-hidden="true"></i>
+    <span>ข่าวสาร</span>
+  </a>
+
+  <a href="#learningSourceBox" class="mobile-bottom-link">
+    <i class="fa fa-map-marker" aria-hidden="true"></i>
+    <span>แหล่งเรียนรู้</span>
+  </a>
+
+  <a href="#featured" class="mobile-bottom-link">
+    <i class="fa fa-book" aria-hidden="true"></i>
+    <span>หนังสือ</span>
+  </a>
+
+  <a href="#learningBaseModule" class="mobile-bottom-link">
+    <i class="fa fa-calendar-check-o" aria-hidden="true"></i>
+    <span>กิจกรรม</span>
+  </a>
+
+</nav>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const mobileLinks = Array.from(
+    document.querySelectorAll('.mobile-bottom-link')
+  );
+
+  const sectionIds = [
+    'home',
+    'newsSlider',
+    'learningSourceBox',
+    'featured',
+    'learningBaseModule'
+  ];
+
+  const setActiveMenu = function (targetId) {
+    mobileLinks.forEach(function (link) {
+      const href = link.getAttribute('href');
+      link.classList.toggle(
+        'active',
+        href === '#' + targetId
+      );
+    });
+  };
+
+  mobileLinks.forEach(function (link) {
+    link.addEventListener('click', function () {
+      const targetId = link
+        .getAttribute('href')
+        .replace('#', '');
+
+      setActiveMenu(targetId);
+    });
+  });
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      const visibleEntries = entries
+        .filter(function (entry) {
+          return entry.isIntersecting;
+        })
+        .sort(function (a, b) {
+          return b.intersectionRatio - a.intersectionRatio;
+        });
+
+      if (visibleEntries.length) {
+        setActiveMenu(visibleEntries[0].target.id);
+      }
+    },
+    {
+      root: null,
+      rootMargin: '-20% 0px -60% 0px',
+      threshold: [0.01, 0.1, 0.25]
+    }
+  );
+
+  sectionIds.forEach(function (id) {
+    const section = document.getElementById(id);
+
+    if (section) {
+      observer.observe(section);
+    }
+  });
+});
+</script>
+</body>
+</html>

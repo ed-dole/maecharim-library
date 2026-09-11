@@ -1,0 +1,30 @@
+ระบบหน้าเดียว index.html สำหรับผู้ชมและผู้ดูแล
+
+วิธีนำไปใช้
+1. อัปโหลดไฟล์และโฟลเดอร์ทั้งหมดใน ZIP ทับเว็บไซต์เดิม
+2. ลบไฟล์ mysite.html, mysite.js และ mysite.css บน GitHub หากยังคงอยู่
+3. เปิด index.html และกดปุ่ม "ผู้ดูแลระบบ"
+4. Login ด้วย Username/Password จาก Spreadsheet 1czPYie3sd4gF4oe0aT3LfNmxBManrj112qnFqalUHvo ชีต 'library' (A=Email/Name, B=Username, C=Password)
+
+พฤติกรรมระบบ
+- ผู้ชมทั่วไปเห็นเว็บไซต์ปกติและไม่โหลดไฟล์เครื่องมือจัดการ
+- เมื่อ Login สำเร็จ ระบบตรวจ Token แล้วโหลด CSS/JS เครื่องมือแก้ไขแบบ Lazy Load
+- ปุ่มแก้ไขทั้งหมดแสดงบน index.html
+- เมื่อออกจากโหมดแก้ไข Token จะถูกลบและปุ่มทั้งหมดถูกซ่อน
+- Apps Script ยังคงตรวจ Token ทุกคำสั่งแก้ไข
+- ปุ่ม Login/Logout อยู่ใน Footer ใต้ข้อความ footerDescription
+- index.html แสดงรายการบุคลากรจากชีต boss และปุ่ม "จัดการข้อมูล" เมื่ออยู่ในโหมดผู้ดูแล
+- best_practice.html, innovation.html, media.html, reward.html และ course.html
+  แสดงปุ่ม "จัดการข้อมูล" เมื่อ Token ผู้ดูแลผ่านการตรวจสอบเท่านั้น
+
+ไฟล์ใหม่
+- admin-mode.js
+- admin-mode.css
+- admin-subpage.js
+- admin-subpage.css
+
+ไฟล์ที่ลบ
+- mysite.html
+- mysite.js
+- mysite.css
+- team.html (ย้ายรายการบุคลากรมาแสดงใน index.html แล้ว)

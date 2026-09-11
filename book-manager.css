@@ -1,0 +1,24 @@
+/* Admin manager: featured books */
+#featured .section-heading{gap:18px;flex-wrap:wrap}
+#featured .book-manager-trigger{align-self:center;white-space:nowrap;background:#7c3aed;border-color:#7c3aed;color:#fff;box-shadow:0 10px 24px rgba(124,58,237,.25)}
+#featured .book-manager-trigger:hover{filter:brightness(.97);transform:translateY(-1px)}
+.book-manager-popup{padding:18px!important;border-radius:22px!important}
+.book-manager-shell{font-family:Kanit,sans-serif;text-align:left;color:#172033}
+.book-manager-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:8px 4px 18px}
+.book-manager-toolbar h2{margin:0;font-size:25px}.book-manager-toolbar h2 i{color:#7c3aed;margin-right:8px}.book-manager-toolbar p{margin:4px 0 0;color:#64748b;font-size:13px}
+.book-manager-add,.book-manager-btn{border:0;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:700}
+.book-manager-add{display:inline-flex;align-items:center;gap:8px;background:#16a34a;color:#fff;padding:11px 17px;box-shadow:0 8px 18px rgba(22,163,74,.2)}
+.book-manager-table-wrap{overflow:auto;max-height:68vh;border:1px solid #e2e8f0;border-radius:15px;background:#fff}
+.book-manager-table{width:100%;border-collapse:collapse;min-width:1040px;font-size:14px}
+.book-manager-table th{position:sticky;top:0;z-index:2;background:#f1f5f9;color:#334155;padding:12px 10px;border-bottom:1px solid #cbd5e1;text-align:left;white-space:nowrap}
+.book-manager-table td{padding:10px;border-bottom:1px solid #e2e8f0;vertical-align:middle}.book-manager-table tbody tr:hover{background:#fafafa}
+.book-manager-number{font-weight:800;text-align:center}.book-manager-title-cell{font-weight:650;min-width:190px}.book-manager-detail-cell{min-width:230px;color:#475569}
+.book-manager-thumb{width:58px;height:76px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:block}
+.book-manager-row-actions{display:flex;gap:7px;flex-wrap:wrap}.book-manager-btn{padding:8px 11px;font-size:13px}.book-manager-edit{background:#2563eb;color:#fff}.book-manager-delete{background:#dc2626;color:#fff}.book-manager-empty{text-align:center!important;padding:30px!important;color:#64748b}
+.book-editor-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;text-align:left;font-family:Kanit,sans-serif}
+.book-editor-preview{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:18px;border-radius:18px;background:linear-gradient(180deg,#fff7ed,#ffedd5);border:1px solid #fed7aa}
+.book-editor-cover-frame{width:190px;aspect-ratio:3/4;overflow:hidden;border-radius:14px;box-shadow:0 14px 30px rgba(15,23,42,.18);background:#fff}.book-editor-cover-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.book-editor-preview-category{display:inline-flex;background:#7c3aed;color:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700}.book-editor-preview strong{font-size:19px;text-align:center;line-height:1.35}
+.book-editor-form{display:grid;grid-template-columns:1fr;gap:8px}.book-editor-form label{font-weight:700;color:#334155;margin-top:3px}.book-editor-form input,.book-editor-form select,.book-editor-form textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font:400 14px Kanit,sans-serif;background:#fff;color:#0f172a}.book-editor-form textarea{resize:vertical;min-height:150px}
+.book-editor-image-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px}.book-editor-upload-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin:0!important;padding:9px 13px;border-radius:10px;background:#0ea5e9;color:#fff!important;cursor:pointer;white-space:nowrap}.book-editor-image-status,.book-editor-help{color:#64748b;font-size:12px}.book-editor-image-status.is-loading{color:#2563eb}.book-editor-image-status.is-ready{color:#15803d}.book-editor-image-status.is-error{color:#dc2626}
+@media(max-width:760px){#featured .book-manager-trigger{width:100%;justify-content:center}.book-manager-toolbar{align-items:stretch;flex-direction:column}.book-manager-add{justify-content:center}.book-editor-grid{grid-template-columns:1fr}.book-editor-preview{display:none}.book-editor-image-row{grid-template-columns:1fr}.book-editor-upload-button{width:100%;box-sizing:border-box}}

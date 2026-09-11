@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>จดหมายข่าวทั้งหมด</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <!-- CSS หลักของเว็บไซต์ -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- CSS Activity Box -->
+  <link rel="stylesheet" href="activity-box.css">
+
+  <style>
+    .activity-page{
+      min-height:100vh;
+      padding:48px 0 80px;
+      background:#f5f7fb;
+    }
+
+    .activity-page-container{
+      width:min(1320px, calc(100% - 40px));
+      margin:0 auto;
+    }
+
+    .activity-page-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px;
+      margin-bottom:28px;
+    }
+
+    .activity-page-heading{
+      min-width:0;
+    }
+
+    .activity-page-kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      margin-bottom:8px;
+      color:#ef7c00;
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .activity-page-heading h1{
+      margin:0;
+      color:#111827;
+      font-size:clamp(28px, 4vw, 42px);
+      line-height:1.2;
+    }
+
+    .activity-page-heading p{
+      margin:10px 0 0;
+      color:#64748b;
+      font-size:16px;
+    }
+
+    .activity-back-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      flex-shrink:0;
+
+      padding:11px 18px;
+      border-radius:999px;
+
+      background:#fff;
+      border:1px solid #dbe1ea;
+      color:#334155;
+
+      text-decoration:none;
+      font-size:15px;
+      font-weight:700;
+
+      box-shadow:0 5px 15px rgba(15,23,42,.07);
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        border-color .2s ease;
+    }
+
+    .activity-back-btn:hover{
+      transform:translateY(-2px);
+      border-color:#ff9800;
+      box-shadow:0 10px 22px rgba(15,23,42,.12);
+    }
+
+    .activity-page .activity-box-grid{
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+    }
+
+    .activity-page-status{
+      padding:45px 20px;
+      border:1px dashed #cbd5e1;
+      border-radius:16px;
+      background:#fff;
+      color:#64748b;
+      text-align:center;
+      font-size:16px;
+    }
+
+
+    .activity-slider-controls{
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      align-items:center;
+      margin-top:30px;
+      padding:0 8px;
+    }
+
+    .activity-slider-controls[hidden]{
+      display:none;
+    }
+
+    .activity-slider-btn{
+      width:58px;
+      height:58px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #d8e1ec;
+      border-radius:50%;
+      background:#fff;
+      color:#ef7c00;
+      font-size:22px;
+      cursor:pointer;
+      box-shadow:0 8px 22px rgba(15,23,42,.09);
+      transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .activity-slider-btn:first-child{justify-self:start}
+    .activity-slider-btn:last-child{justify-self:end}
+
+    .activity-slider-btn:hover:not(:disabled){
+      transform:translateY(-2px);
+      box-shadow:0 12px 28px rgba(15,23,42,.14);
+    }
+
+    .activity-slider-btn:disabled{
+      opacity:.28;
+      cursor:not-allowed;
+    }
+
+    .activity-page-indicator{
+      min-width:78px;
+      padding:8px 14px;
+      border-radius:999px;
+      background:#e8eef6;
+      color:#64748b;
+      text-align:center;
+      font-size:14px;
+      font-weight:700;
+    }
+
+    @media (max-width:1200px){
+      .activity-page .activity-box-grid{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width:992px){
+      .activity-page .activity-box-grid{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width:768px){
+      .activity-page{
+        padding:34px 0 60px;
+      }
+
+      .activity-page-container{
+        width:min(100% - 28px, 1320px);
+      }
+
+      .activity-page-top{
+        align-items:flex-start;
+      }
+
+      .activity-page .activity-box-grid{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:16px;
+      }
+    }
+
+    @media (max-width:520px){
+      .activity-page-top{
+        flex-direction:column;
+      }
+
+      .activity-back-btn{
+        width:100%;
+      }
+
+      .activity-page .activity-box-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+
+<body class="theme-v2">
+
+  <!-- ใส่ Header หรือ Menu เดิมของเว็บไซต์ตรงนี้ -->
+
+  <main class="activity-page">
+    <div class="activity-page-container">
+
+      <div class="activity-page-top">
+
+        <div class="activity-page-heading">
+          <div class="activity-page-kicker">
+            <i class="fa-solid fa-star"
+               aria-hidden="true"></i>
+            ข่าวกิจกรรม
+          </div>
+
+          <h1>จดหมายข่าวทั้งหมด</h1>
+
+          <p>
+            รวมข่าวสารและกิจกรรมทั้งหมด
+          </p>
+        </div>
+
+<a class="activity-back-btn"
+   href="index.html"
+   onclick="return backToHome(event)">
+          <i class="fa-solid fa-arrow-left"
+             aria-hidden="true"></i>
+          กลับหน้าหลัก
+        </a>
+
+      </div>
+
+      <div id="activityAllStatus"
+           class="activity-page-status">
+        กำลังโหลดข้อมูลกิจกรรม...
+      </div>
+
+      <div id="activityAllGrid"
+           class="activity-box-grid">
+      </div>
+
+      <div id="activitySliderControls" class="activity-slider-controls" hidden>
+        <button id="activityPrevBtn" class="activity-slider-btn" type="button" aria-label="แสดง 12 รายการก่อนหน้า">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+
+        <div id="activityPageIndicator" class="activity-page-indicator"></div>
+
+        <button id="activityNextBtn" class="activity-slider-btn" type="button" aria-label="แสดง 12 รายการถัดไป">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ใส่ Footer เดิมของเว็บไซต์ตรงนี้ -->
+
+  <script>
+    (() => {
+      'use strict';
+
+      const ACTIVITY_API_URL =
+        window.APP_CONFIG.API_URL + '?mode=activity';
+
+      const ACTIVITY_PAGE_SIZE = 12;
+      const activityState = { items: [], page: 0 };
+
+      const escapeHtml = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+      function normalizeActivity(row) {
+        return {
+          title: String(
+            row.title ??
+            row.topic ??
+            ''
+          ).trim(),
+
+          image: String(
+            row.image ??
+            row.imageUrl ??
+            ''
+          ).trim(),
+
+          url: String(
+            row.url ??
+            row.link ??
+            ''
+          ).trim(),
+
+          date: String(
+            row.date ??
+            ''
+          ).trim()
+        };
+      }
+
+      function renderActivities(items) {
+        const grid =
+          document.getElementById('activityAllGrid');
+
+        const status =
+          document.getElementById('activityAllStatus');
+
+        if (!grid || !status) return;
+
+        const controls = document.getElementById('activitySliderControls');
+        const prevBtn = document.getElementById('activityPrevBtn');
+        const nextBtn = document.getElementById('activityNextBtn');
+        const indicator = document.getElementById('activityPageIndicator');
+
+        if (!items.length) {
+          if (controls) controls.hidden = true;
+          grid.innerHTML = '';
+          status.hidden = false;
+          status.textContent = 'ยังไม่มีข้อมูลกิจกรรม';
+          return;
+        }
+
+        status.hidden = true;
+
+        const totalPages = Math.max(1, Math.ceil(items.length / ACTIVITY_PAGE_SIZE));
+        const start = activityState.page * ACTIVITY_PAGE_SIZE;
+        const visibleItems = items.slice(start, start + ACTIVITY_PAGE_SIZE);
+
+        grid.innerHTML = visibleItems.map((item) => {
+          const title = escapeHtml(
+            item.title || 'กิจกรรม'
+          );
+
+          const image = escapeHtml(
+            item.image ||
+            'https://placehold.co/900x650?text=Activity'
+          );
+
+          const url = escapeHtml(item.url || '');
+          const date = escapeHtml(item.date || '');
+
+          const clickableClass =
+            item.url ? ' is-clickable' : '';
+
+          return `
+            <article class="activity-box-card${clickableClass}">
+
+              <a class="activity-box-image-link"
+                 href="${url || '#'}"
+                 ${item.url
+                   ? 'target="_blank" rel="noopener noreferrer"'
+                   : 'aria-disabled="true" tabindex="-1"'}
+                 aria-label="เปิดรายละเอียด ${title}">
+
+                <img
+                  src="${image}"
+                  alt="${title}"
+                  loading="lazy"
+                  onerror="this.onerror=null;this.src='https://placehold.co/900x650?text=Activity';">
+              </a>
+
+              <div class="activity-box-card-body">
+
+                <h3>${title}</h3>
+
+                ${
+                  date
+                    ? `
+                      <div class="activity-box-date">
+                        <i class="fa-solid fa-calendar-days"
+                           aria-hidden="true"></i>
+                        <span>${date}</span>
+                      </div>
+                    `
+                    : ''
+                }
+
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        if (controls && prevBtn && nextBtn && indicator) {
+          controls.hidden = totalPages <= 1;
+          prevBtn.disabled = activityState.page <= 0;
+          nextBtn.disabled = activityState.page >= totalPages - 1;
+          indicator.textContent = `${activityState.page + 1} / ${totalPages}`;
+        }
+      }
+
+      async function loadAllActivities() {
+        const status =
+          document.getElementById('activityAllStatus');
+
+        try {
+          const response = await fetch(
+            ACTIVITY_API_URL + '&_t=' + Date.now(),
+            {
+              method:'GET',
+              cache:'no-store'
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `HTTP ${response.status}`
+            );
+          }
+
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(
+              result.message ||
+              'โหลดข้อมูลกิจกรรมไม่สำเร็จ'
+            );
+          }
+
+          const items = (result.activities || [])
+            .map(normalizeActivity)
+            .filter(item =>
+              item.title || item.image
+            );
+
+          activityState.items = items;
+          activityState.page = 0;
+          renderActivities(activityState.items);
+
+        } catch (error) {
+          console.error(
+            'Activity All Page:',
+            error
+          );
+
+          if (status) {
+            status.hidden = false;
+            status.textContent =
+              'ไม่สามารถโหลดข้อมูลกิจกรรมได้ กรุณาตรวจสอบ Apps Script';
+          }
+        }
+      }
+
+      function showPreviousActivities() {
+        if (activityState.page <= 0) return;
+        activityState.page -= 1;
+        renderActivities(activityState.items);
+      }
+
+      function showNextActivities() {
+        const totalPages = Math.ceil(activityState.items.length / ACTIVITY_PAGE_SIZE);
+        if (activityState.page >= totalPages - 1) return;
+        activityState.page += 1;
+        renderActivities(activityState.items);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('activityPrevBtn')?.addEventListener('click', showPreviousActivities);
+        document.getElementById('activityNextBtn')?.addEventListener('click', showNextActivities);
+        loadAllActivities();
+      });
+    })();
+  </script>
+<script>
+function backToHome(event) {
+  event.preventDefault();
+
+  // หาก activity.html เปิดเป็นแท็บใหม่ ให้ปิดแท็บ
+  // หน้า index.html เดิมจะยังแสดงข้อมูลและตำแหน่งเดิม
+  if (window.opener && !window.opener.closed) {
+    window.close();
+    return false;
+  }
+
+  // หากเปิดในแท็บเดียวกัน ให้ย้อนกลับไปหน้าเดิม
+  if (window.history.length > 1) {
+    window.history.back();
+    return false;
+  }
+
+  // กรณีเปิด activity.html โดยตรงและไม่มีประวัติ
+  window.location.href = 'index.html';
+  return false;
+}
+</script>
+</body>
+</html>

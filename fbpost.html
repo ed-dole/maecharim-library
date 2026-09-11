@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โพสต์ Facebook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="fbpost.css?v=20260826-2">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="fb-page">
+    <div class="fb-page-container">
+      <div class="fb-page-top">
+        <div>
+          <div class="fb-page-kicker"><i class="fa-brands fa-facebook"></i> FACEBOOK</div>
+          <h1>โพสต์จากพื้นที่</h1>
+          <p>รวมโพสต์ Facebook จากทุกพื้นที่</p>
+        </div>
+        <a class="fb-back-btn" href="index.html">
+          <i class="fa-solid fa-arrow-left"></i> กลับหน้าหลัก
+        </a>
+      </div>
+
+      <section class="fb-filter" aria-label="ตัวกรองโพสต์">
+        <label for="fbAreaFilter">เลือกผู้โพสต์</label>
+        <select id="fbAreaFilter">
+          <option value="">ทุกรายการ</option>
+        </select>
+        <div id="fbResultCount" class="fb-result-count"></div>
+      </section>
+
+      <div id="fbPageStatus" class="fb-page-status">กำลังโหลดโพสต์ Facebook...</div>
+      <section id="fbPageGrid" class="fb-page-grid" aria-live="polite"></section>
+
+      <div id="fbSliderControls" class="fb-slider-controls" hidden>
+        <button id="fbPrevBtn" class="fb-slider-btn" type="button" aria-label="แสดง 4 รายการก่อนหน้า">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div id="fbPageIndicator" class="fb-page-indicator"></div>
+        <button id="fbNextBtn" class="fb-slider-btn" type="button" aria-label="แสดง 4 รายการถัดไป">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script src="fbpost.js?v=20260826-7"></script>
+</body>
+</html>

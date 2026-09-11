@@ -1,0 +1,17 @@
+เพิ่ม API สำหรับ Box Cliproom ในไฟล์ Code.gs ของ Apps Script
+============================================================
+
+ในฟังก์ชัน doGet(e) ให้เพิ่มโค้ดต่อไปนี้เป็นบรรทัดแรกภายในฟังก์ชัน ก่อน const page = ...
+
+  const mode=String(e&&e.parameter&&e.parameter.mode||'').toLowerCase();
+  if(mode==='cliproombox'){
+    const callback=String(e.parameter.callback||'cliproomCatalogCallback').replace(/[^a-zA-Z0-9_.$]/g,'');
+    const catalog=getPublicCatalog();
+    return ContentService.createTextOutput(callback+'('+JSON.stringify({success:true,settings:catalog.settings,courses:catalog.courses})+')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+จากนั้นกด Deploy > Manage deployments > Edit > New version > Deploy
+
+cliproom.html แสดงหน้า Index ของ Apps Script เดิมผ่าน iframe จึงคงระบบล็อกอิน หลักสูตร วิดีโอ แบบทดสอบ ความคืบหน้า และเกียรติบัตรเดิมทุกประการ
+หากเปลี่ยน Deployment URL ให้แก้ URL ใน cliproom.html และ cliproom-box.js ให้ตรงกัน

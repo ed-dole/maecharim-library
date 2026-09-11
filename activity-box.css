@@ -1,0 +1,211 @@
+/* =========================================================
+   Activity Box
+   ดึงข้อมูลจากชีต activity:
+   A = เรื่อง
+   B = URL รูปภาพ
+   C = URL รายละเอียด
+   D = วันที่
+   ========================================================= */
+
+.activity-box-section{
+  padding:64px 0 76px;
+  background:#f5f7fb;
+}
+
+.activity-box-container{
+  width:min(1320px, calc(100% - 40px));
+  margin:0 auto;
+}
+
+.activity-box-heading{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:24px;
+}
+
+.activity-box-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:7px;
+  color:#ef7c00;
+  font-size:14px;
+  font-weight:700;
+}
+
+.activity-box-heading h2{
+  margin:0;
+  color:#1f2937;
+  font-size:clamp(26px, 3vw, 38px);
+  line-height:1.2;
+}
+
+/* จอใหญ่แสดง 6 ใบล่าสุด */
+.activity-box-grid{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(0, 1fr));
+  gap:20px;
+}
+
+.activity-box-card{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  overflow:hidden;
+
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  background:#fff;
+
+  box-shadow:0 8px 24px rgba(15, 23, 42, .08);
+  transition:
+    transform .22s ease,
+    box-shadow .22s ease;
+}
+
+.activity-box-card.is-clickable:hover{
+  transform:translateY(-6px);
+  box-shadow:0 16px 34px rgba(15, 23, 42, .15);
+}
+
+/* รูปชนขอบการ์ด และสูงตามสัดส่วนจริง */
+.activity-box-image-link{
+  position:relative;
+  display:block;
+  width:100%;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  text-decoration:none;
+  background:transparent;
+}
+
+.activity-box-image-link[aria-disabled="true"]{
+  cursor:default;
+}
+
+.activity-box-image-link img{
+  display:block;
+  width:100%;
+  height:auto;
+  margin:0;
+  padding:0;
+
+  object-fit:unset;
+  transition:transform .35s ease;
+}
+
+.activity-box-card.is-clickable:hover
+.activity-box-image-link img{
+  transform:scale(1.035);
+}
+
+.activity-box-badge{
+  position:absolute;
+  top:12px;
+  left:12px;
+
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+
+  padding:7px 12px;
+  border-radius:999px;
+
+  background:#ffc400;
+  color:#111827;
+
+  font-size:13px;
+  font-weight:700;
+
+  box-shadow:0 5px 15px rgba(0, 0, 0, .14);
+}
+
+.activity-box-card-body{
+  flex:1;
+  padding:16px 18px 20px;
+  background:#fff;
+}
+
+.activity-box-card-body h3{
+  display:-webkit-box;
+  overflow:hidden;
+  margin:0;
+
+  color:#111827;
+  font-size:14px;
+  font-weight:700;
+  line-height:1.45;
+
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+}
+
+.activity-box-date{
+  display:flex;
+  align-items:center;
+  gap:6px;
+
+  margin-top:10px;
+  color:#777;
+  font-size:14px;
+}
+
+.activity-box-date i{
+  color:#ff9800;
+}
+
+.activity-box-status{
+  padding:36px 18px;
+  border:1px dashed #cbd5e1;
+  border-radius:16px;
+
+  background:#fff;
+  color:#64748b;
+
+  text-align:center;
+  font-size:16px;
+}
+
+/* 4 ใบ */
+@media (max-width:1200px){
+  .activity-box-grid{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 3 ใบ */
+@media (max-width:992px){
+  .activity-box-grid{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 2 ใบ */
+@media (max-width:768px){
+  .activity-box-section{
+    padding:48px 0 58px;
+  }
+
+  .activity-box-container{
+    width:min(100% - 28px, 1320px);
+  }
+
+  .activity-box-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:16px;
+  }
+}
+
+/* 1 ใบ */
+@media (max-width:520px){
+  .activity-box-grid{
+    grid-template-columns:1fr;
+  }
+
+  .activity-box-card-body h3{
+    font-size:17px;
+  }
+}

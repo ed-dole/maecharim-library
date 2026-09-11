@@ -1,0 +1,113 @@
+.home-summary-section {
+  width: 100%;
+  margin: 0 0 25px;
+}
+
+.home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.home-summary-card {
+  position: relative;
+  min-width: 0;
+  min-height: 126px;
+  padding: 13px 70px 13px 18px;
+  overflow: hidden;
+}
+
+.home-summary-card-user { border-left: 4px solid #0b4d78; }
+.home-summary-card-admin { border-left: 4px solid #f59e0b; }
+.home-summary-card-registration { border-left: 4px solid #22c55e; }
+.home-summary-card-login { border-left: 4px solid #9333ea; }
+.home-summary-card-website { border-left: 4px solid #0891b2; }
+.home-summary-card-website { border-right: 4px solid #0891b2; }
+
+.home-summary-title {
+  margin-bottom: 5px;
+  color: #222;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.home-summary-number {
+  color: #050505;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.home-summary-icon {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 22px;
+}
+
+.home-summary-icon-user { background: #0b4d78; }
+.home-summary-icon-admin { background: #f59e0b; }
+.home-summary-icon-registration { background: #22c55e; }
+.home-summary-icon-login { background: #9333ea; }
+.home-summary-icon-website { background: #0891b2; }
+
+.home-summary-levels {
+  display: flex;
+  gap: 9px;
+  margin-top: 8px;
+  margin-right: -52px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-summary-levels div {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 5px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.home-summary-levels span {
+  margin-left: 3px;
+  color: #111;
+}
+
+.home-summary-login-levels {
+  margin-right: -52px;
+}
+
+.home-summary-login-levels div {
+  font-size: 13px;
+}
+
+.home-summary-loading .home-summary-number,
+.home-summary-loading .home-summary-levels span {
+  color: #94a3b8;
+}
+
+@media (max-width: 1280px) {
+  .home-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .home-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .home-summary-section { margin-bottom: 18px; }
+  .home-summary-grid { grid-template-columns: 1fr; gap: 12px; }
+  .home-summary-card { min-height: 112px; }
+}

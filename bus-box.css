@@ -1,0 +1,282 @@
+/* Bus activity box — isolated styles */
+
+/* ========================================
+   ข่าว + Bus แบบลอยด้านซ้าย
+======================================== */
+
+.news-section{
+  position:relative;
+  z-index:2;
+  overflow:visible;
+}
+
+.news-section > .container{
+  position:relative;
+}
+
+.news-bus-layout{
+  position:relative;
+  display:block;
+  width:100%;
+}
+
+.news-column{
+  position:relative;
+  width:100%;
+  min-width:0;
+  margin:0;
+  z-index:1;
+}
+
+.news-column .news-slider,
+.news-column #newsSlider{
+  position:relative;
+  width:100%;
+  margin:0;
+  inset:auto;
+  transform:none;
+}
+
+/* Box Bus อยู่ใต้ Box ผู้บริหารภายใน left-info-stack */
+.bus-box{
+  position:relative !important;
+  top:auto;
+  left:auto;
+
+  width:255px;
+  max-width:255px;
+
+  margin:0 !important;
+  transform:none !important;
+
+  z-index:20;
+
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 14px 35px rgba(15,23,42,.14);
+}
+
+/* ไม่มีรายการ Bus */
+.news-bus-layout.bus-is-hidden .bus-box{
+  display:none !important;
+}
+
+/* ========================================
+   ภายใน Box Bus
+======================================== */
+
+.bus-visual{
+  padding:12px 12px 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.bus-image{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center bottom;
+}
+
+.bus-content{
+  padding:14px 18px 12px;
+  color:#111827;
+}
+
+.bus-loading,
+.bus-empty{
+  min-height:150px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  color:#64748b;
+  text-align:center;
+}
+
+.bus-title{
+  margin:0 0 10px;
+
+  font-size:17px;
+  font-weight:800;
+  line-height:1.35;
+  text-align:center;
+}
+
+.bus-info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px 12px;
+
+  font-size:13px;
+  line-height:1.45;
+}
+
+.bus-info-item{
+  min-width:0;
+}
+
+.bus-info-item strong{
+  display:block;
+
+  color:#475569;
+  font-size:11px;
+  font-weight:700;
+}
+
+.bus-info-item span{
+  display:block;
+  overflow-wrap:anywhere;
+
+  color:#111827;
+  font-weight:600;
+}
+
+
+.bus-detail{
+    margin-top:12px;
+    padding:12px;
+
+    border-radius:12px;
+
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+
+    color:#334155;
+    font-size:13px;
+    line-height:1.7;
+
+    white-space:pre-line;
+}
+
+.bus-detail strong{
+    display:block;
+    margin-bottom:6px;
+
+    color:#111827;
+    font-size:12px;
+}
+
+.bus-detail-text{
+    color:#475569;
+}
+
+.bus-controls{
+  padding:0 16px 14px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+
+.bus-nav{
+  width:30px;
+  height:30px;
+  padding:0;
+
+  border:1px solid #dbe3ee;
+  border-radius:50%;
+
+  background:#fff;
+  color:#2563eb;
+
+  font-size:21px;
+  line-height:1;
+
+  cursor:pointer;
+}
+
+.bus-dots{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.bus-dot{
+  width:8px;
+  height:8px;
+  padding:0;
+
+  border:0;
+  border-radius:999px;
+
+  background:#cbd5e1;
+
+  cursor:pointer;
+}
+
+.bus-dot.active{
+  width:22px;
+  background:#2563eb;
+}
+
+/* ========================================
+   ป้องกันชนกับ Box แหล่งเรียนรู้
+======================================== */
+
+#learningSourceBox,
+.lsb-section{
+  position:relative;
+  z-index:1;
+  clear:both;
+}
+
+/* ========================================
+   หน้าจอที่ไม่กว้างพอ ให้กลับเข้า Layout
+======================================== */
+
+@media(max-width:1450px){
+
+  .news-bus-layout{
+    display:grid;
+    grid-template-columns:255px minmax(0,1fr);
+    align-items:start;
+    gap:30px;
+  }
+
+  .bus-box{
+    width:100%;
+    max-width:255px;
+    margin:0 !important;
+  }
+}
+
+/* ========================================
+   Tablet / Mobile
+======================================== */
+
+@media(max-width:900px){
+
+  .news-bus-layout{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+  }
+
+  .news-column{
+    order:1;
+  }
+
+  .bus-box{
+    width:100%;
+    max-width:420px;
+    margin:0 auto !important;
+  }
+}
+
+@media(max-width:560px){
+
+  .bus-visual{
+    height:165px;
+  }
+
+  .bus-info-grid{
+    grid-template-columns:1fr;
+  }
+}

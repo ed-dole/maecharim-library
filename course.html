@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="คลังหลักสูตร Learning Course Repository">
+  <title>คลังหลักสูตร | Learning Course Repository</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="course.css?v=20260820-1">
+  <link rel="stylesheet" href="admin-subpage.css?v=20260826-1">
+  <link rel="stylesheet" href="course-manager.css?v=20260826-1">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="course-page">
+    <div class="course-container">
+      <div class="course-topbar admin-subpage-topbar">
+        <button class="admin-manage-data-button" type="button" data-admin-page="course" hidden>จัดการข้อมูล</button>
+        <a class="course-back" href="index.html"
+           onclick="return backToHome(event)" aria-label="กลับหน้าหลัก">
+          ← กลับหน้าหลัก
+        </a>
+      </div>
+
+      <header class="course-heading">
+        <p>Learning Course Repository</p>
+        <h1>คลังหลักสูตร</h1>
+        <span aria-hidden="true"></span>
+      </header>
+
+      <section class="course-panel">
+        <div class="course-toolbar">
+          <label for="courseSearch">ค้นหา</label>
+          <input id="courseSearch" type="search"
+                 placeholder="ค้นหาหลักสูตร ผู้เสนอ หรือวันที่..."
+                 autocomplete="off">
+          <strong id="courseCount">กำลังโหลด...</strong>
+        </div>
+
+        <div id="courseStatus" class="course-status" role="status">
+          <span class="course-spinner" aria-hidden="true"></span>
+          <span>กำลังโหลดรายการหลักสูตร...</span>
+        </div>
+
+        <div class="course-table-wrap">
+          <table class="course-table">
+            <thead>
+              <tr>
+                <th class="course-number-column">ลำดับ</th>
+                <th>หลักสูตร</th>
+                <th>ผู้เสนอหลักสูตร</th>
+                <th>วันที่อัพโหลดไฟล์</th>
+                <th class="course-download-column">ดาวน์โหลดไฟล์</th>
+              </tr>
+            </thead>
+            <tbody id="courseTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="course.js?v=20260826-1"></script>
+  <script src="admin-subpage.js?v=20260826-1"></script>
+  <script src="course-manager.js?v=20260826-1"></script>
+  <script>
+  function backToHome(event) {
+    if (event) event.preventDefault();
+    if (window.opener && !window.opener.closed) {
+      window.close();
+      return false;
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+      return false;
+    }
+    window.location.href = 'index.html';
+    return false;
+  }
+  </script>
+</body>
+</html>

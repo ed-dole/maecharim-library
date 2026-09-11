@@ -1,0 +1,5017 @@
+
+const WEBSITE_SPREADSHEET_ID = '1ew_J1mCK5OUuHF6mh9LqUcw5VeznnBTMv-QZoaQJHms';  //อำเภอ
+const ADMIN_LOGIN_SPREADSHEET_ID = '1czPYie3sd4gF4oe0aT3LfNmxBManrj112qnFqalUHvo';
+const ADMIN_LOGIN_SHEET_NAME = 'library';  // A=Email/Name, B=Username, C=Password
+const WEBSITE_IMAGE_SHEET = 'website_image';
+const NEWS_SHEET_NAME = 'news_page';
+const BOOK_SHEET_NAME = 'book';
+const BUS_SHEET_NAME = 'bus';
+const BOSS_SHEET_NAME = 'boss';
+
+function jsonOutput_(payload, callback) {
+  const json = JSON.stringify(payload);
+  const cb = String(callback || '').trim();
+
+  if (cb) {
+    const safeCallback = cb.replace(
+      /[^a-zA-Z0-9_$\.]/g,
+      ''
+    );
+
+    if (!safeCallback) {
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Callback ไม่ถูกต้อง'
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService
+      .createTextOutput(
+        safeCallback + '(' + json + ');'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  e = e || { parameter: {} };
+
+  const p = e.parameter || {};
+  const callback = String(p.callback || '').trim();
+
+  const mode = String(p.mode || '')
+    .trim()
+    .toLowerCase();
+
+  const page = String(p.page || '')
+    .trim()
+    .toLowerCase();
+
+  // หน้าหลังบ้านครู
+  if (page === 'teacher') {
+    setupLearningBaseSheets_();
+
+    return HtmlService.createTemplateFromFile('teacher')
+      .evaluate()
+      .setTitle('Dashboard ครูประจำฐาน')
+      .addMetaTag(
+        'viewport',
+        'width=device-width, initial-scale=1'
+      )
+      .setXFrameOptionsMode(
+        HtmlService.XFrameOptionsMode.ALLOWALL
+      );
+  }
+
+  // หน้า Dashboard รายงานสถิติใบงาน/แบบทดสอบจากไฟล์ "ผู้นำ"
+  if (mode === 'report') {
+    return doGetReport_(e);
+  }
+
+
+  // โหลดข้อมูลหลักของ index.html ในคำขอเดียว
+  if (mode === 'homefast') {
+    try {
+      return jsonOutput_({
+        success: true,
+        data: getHomeFastDataCached_(String(p.fresh || '') === '1')
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // รวมระบบแหล่งเรียนรู้เข้ากับ Web App หลัก โดยไม่ทับ doGet เดิม
+  const learningSourceModes = [
+    'learningareaoptions',
+    'learningareas',
+    'learningsheetoptions',
+    'learningbox',
+    'learningdetail',
+    'learningreview'
+  ];
+
+  if (
+    learningSourceModes.indexOf(mode) !== -1 ||
+    page === 'admin' ||
+    (!mode && (!page || page === 'home'))
+  ) {
+    return doGetLearningSource_(e);
+  }
+
+  // Top 3 สำหรับ student-service-card บน GitHub
+  if (mode === 'studentservicetop3') {
+    try {
+      return jsonOutput_(getStudentServiceTop3_(), callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        worksheet: {},
+        quiz: {},
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // กล่องสรุป homeSection บน GitHub (อยู่เหนือ newsSlides)
+  if (mode === 'homesummary') {
+    try {
+      return jsonOutput_({
+        success: true,
+        data: getHomeSummaryData_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // ข้อมูลหน้า vision.html และ contact.html จากชีต setting
+  if (mode === 'aboutpages') {
+    try {
+      return jsonOutput_(Object.assign({
+        success: true
+      }, getAboutPagesData_()), callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // รูปภาพเว็บไซต์
+  if (mode === 'images') {
+    try {
+      return jsonOutput_(
+        getWebsiteImages()
+      );
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      });
+    }
+  }
+
+  // ตารางสำหรับปุ่มแก้ไขข้อความ/ภาพบนหน้าเว็บไซต์
+  if (mode === 'editwebsite') {
+    try {
+      requireAdminSession_(p.token);
+      return jsonOutput_(getEditWebsiteData_(p.editor), callback);
+    } catch (err) {
+      return jsonOutput_({ success: false, message: err.message }, callback);
+    }
+  }
+
+  // บันทึกเฉพาะเซลล์ที่อนุญาต โดยไม่เขียนทับคอลัมน์หรือช่วงอื่น
+  if (mode === 'saveeditwebsite') {
+    try {
+      requireAdminSession_(p.token);
+      return jsonOutput_(saveEditWebsiteData_(p.editor, p.values), callback);
+    } catch (err) {
+      return jsonOutput_({ success: false, message: err.message }, callback);
+    }
+  }
+
+  // Best Practice จากทุกชีตย่อยที่ระบุใน แหล่งเรียนรู้!B2:B
+  if (mode === 'bestpractice') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getBestPracticeItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // สื่อ/นวัตกรรม จากทุกชีตย่อยที่ระบุใน แหล่งเรียนรู้!B2:B
+  if (mode === 'innovation') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getInnovationItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // คลังสื่อการสอนจากทุกชีตย่อยที่ระบุใน แหล่งเรียนรู้!B2:B
+  if (mode === 'media') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getMediaItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        items: [],
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // รางวัลและเกียรติบัตรจากทุกชีตย่อยใน แหล่งเรียนรู้!B2:B
+  if (mode === 'reward') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getRewardItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        items: [],
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // คลังหลักสูตรจากทุกชีตย่อยใน แหล่งเรียนรู้!B2:B
+  if (mode === 'course') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getCourseItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        items: [],
+        message: err.message
+      }, callback);
+    }
+  }
+
+
+  // โพสต์ Facebook จากทุกชีตย่อยที่ระบุใน แหล่งเรียนรู้!B2:B
+  if (mode === 'facebook') {
+    try {
+      return jsonOutput_({
+        success: true,
+        items: getFacebookItems_()
+      }, callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        items: [],
+        message: err.message
+      }, callback);
+    }
+  }
+  // ข่าวสารและประชาสัมพันธ์
+  if (mode === 'news') {
+    try {
+      const news = getNewsSlides();
+      return jsonOutput_({
+        success: true,
+        mode: news.mode,
+        slides: news.slides
+      });
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      });
+    }
+  }
+
+  // ระบบฐานการเรียนรู้เดิม หรือข้อมูลแหล่งเรียนรู้
+  if (mode === 'learning') {
+    try {
+      // มี action = ระบบกิจกรรมเดิม
+      if (String(p.action || '').trim()) {
+        return jsonOutput_({
+          success: true,
+          data: runLearningAction_(p.action, p)
+        }, callback);
+      }
+
+      // ไม่มี action = หน้าแหล่งเรียนรู้
+      const spreadsheetId = String(
+        p.spreadsheetId || getTargetSpreadsheetId_()
+      ).trim();
+
+      return jsonOutput_(getPublicData(spreadsheetId), callback);
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      }, callback);
+    }
+  }
+
+  // หนังสือที่น่าอ่าน
+  if (mode === 'books') {
+    try {
+      return jsonOutput_({
+        success: true,
+        data: getBooks_()
+      });
+    } catch (err) {
+      return jsonOutput_({
+        success: false,
+        message: err.message
+      });
+    }
+  }
+// กิจกรรมรถโมบาย
+if (mode === 'bus') {
+  try {
+    return jsonOutput_({
+      success: true,
+      items: getBusActivities_()
+    });
+  } catch (err) {
+    return jsonOutput_({
+      success: false,
+      message: err.message
+    });
+  }
+}
+if (mode === 'setting') {
+  return jsonOutput_({
+    success: true,
+    data: getSetting()
+  });
+}
+if (mode === 'boss') {
+  return jsonOutput_({
+    success: true,
+    boss: getBossData_()
+  });
+}
+if (mode === 'activity') {
+  return jsonOutput_({
+    success: true,
+    reverseOrder: true,
+    activities: getPublicActivities_()
+  });
+}
+if (mode === 'team') {
+  return jsonOutput_({
+    success: true,
+    team: getTeamMembers_()
+  });
+}
+
+
+  return jsonOutput_({
+    success: false,
+    message: 'Invalid mode',
+    receivedMode: mode
+  });
+}
+
+function getHomeFastDataCached_(forceRefresh) {
+  const cache = CacheService.getScriptCache();
+  const key = 'HOME_FAST_INDEX_V3';
+
+  if (!forceRefresh) {
+    const cached = cache.get(key);
+    if (cached) {
+      try { return JSON.parse(cached); } catch (ignore) {}
+    }
+  }
+
+  const data = getHomeFastData_();
+  try { cache.put(key, JSON.stringify(data), 120); } catch (ignore) {}
+  return data;
+}
+
+function clearHomeFastCache_() {
+  try {
+    CacheService.getScriptCache().removeAll([
+      'HOME_FAST_INDEX_V3',
+      'HOME_SUMMARY_COUNTS_V3',
+      'STUDENT_SERVICE_TOP3_V2'
+    ]);
+  } catch (ignore) {}
+}
+
+function getHomeFastData_() {
+  // สำคัญ: เปิด Spreadsheet หลักครั้งเดียว และอ่านแต่ละชีตเป็นช่วงก้อนใหญ่
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const result = {
+    images: { settingMenus: [], mainNavMenus: { districts: [], libraries: [] } },
+    about: { contact: {}, hero: {}, footer: {} },
+    news: { mode: 'none', slides: [] },
+    activity: [],
+    boss: { image: '', name: '', position: '', popupImage: '', popupUrl: '', popupMode: 'none' },
+    setting: { hourText: 'ชั่วโมง', headerImage: '' }
+  };
+
+  const imageSheet = ss.getSheetByName(WEBSITE_IMAGE_SHEET);
+  if (imageSheet) {
+    const imageValues = imageSheet.getRange('B2:B6').getDisplayValues().flat();
+    result.images.brandIcon = String(imageValues[0] || '').trim();
+    result.images.siteTitle = String(imageValues[1] || '').trim();
+    result.images.heroImage = String(imageValues[2] || '').trim();
+    result.images.heroTitle1 = String(imageValues[3] || '').trim();
+    result.images.heroTitle2 = String(imageValues[4] || '').trim();
+  }
+
+  const settingSheet = ss.getSheetByName('setting');
+  if (settingSheet) {
+    const lastRow = Math.max(7, settingSheet.getLastRow());
+    const rows = settingSheet.getRange(2, 2, lastRow - 1, 19).getDisplayValues(); // B:T
+    const value = function(rowIndex, colIndex) {
+      return String((rows[rowIndex] && rows[rowIndex][colIndex]) || '').trim();
+    };
+
+    result.setting.hourText = value(0, 0) || 'ชั่วโมง';
+    result.setting.headerImage = value(1, 0);
+
+    result.images.settingMenus = rows.map(function(row) {
+      return {
+        title: String(row[2] || '').trim(),
+        subtitle: String(row[3] || '').trim(),
+        icon: String(row[4] || '').trim()
+      };
+    }).filter(function(item) {
+      return item.title || item.subtitle || item.icon;
+    }).slice(0, 6);
+
+    const districts = [];
+    const libraries = [];
+    rows.forEach(function(row) {
+      const districtName = String(row[6] || '').trim();
+      const districtUrl = String(row[7] || '').trim();
+      const libraryName = String(row[8] || '').trim();
+      const libraryUrl = String(row[9] || '').trim();
+      if (districtName && districtUrl) districts.push({ name: districtName, url: districtUrl });
+      if (libraryName && libraryUrl) libraries.push({ name: libraryName, url: libraryUrl });
+    });
+    result.images.mainNavMenus = { districts: districts, libraries: libraries };
+
+    const organization = value(0, 12); // N2
+    const heroTitle = value(1, 18);    // T3
+    result.about = {
+      contact: {
+        organization: organization,
+        coordinate: value(1, 12),
+        address: value(2, 12),
+        phone: value(3, 12),
+        facebook: value(4, 12),
+        line: value(5, 12)
+      },
+      hero: {
+        kicker: value(0, 18),
+        title: heroTitle,
+        description: value(2, 18)
+      },
+      footer: {
+        organization: organization,
+        address: value(2, 12),
+        phone: value(3, 12),
+        description: heroTitle
+      }
+    };
+  }
+
+  const newsSheet = ss.getSheetByName(NEWS_SHEET_NAME);
+  if (newsSheet) {
+    const lastRow = Math.max(1, newsSheet.getLastRow());
+    const rows = newsSheet.getRange(1, 2, lastRow, 9).getDisplayValues(); // B:J
+    const mode = String((rows[0] && rows[0][8]) || 'none').trim().toLowerCase();
+    let slides = rows.slice(1).map(function(row, index) {
+      return {
+        newsNo: index + 1,
+        title: String(row[0] || '').trim(),
+        image: String(row[1] || '').trim(),
+        detail: String(row[2] || '').trim(),
+        detailUrl: String(row[3] || '').trim(),
+        date: String(row[4] || '').trim()
+      };
+    }).filter(function(item) { return item.image !== ''; });
+    if (mode !== 'block' && slides.length > 1) slides = slides.slice(0, 1);
+    result.news = { mode: mode === 'block' ? 'block' : 'none', slides: slides };
+  }
+
+  const activitySheet = ss.getSheetByName('activity');
+  if (activitySheet && activitySheet.getLastRow() >= 2) {
+    result.activity = activitySheet
+      .getRange(2, 1, activitySheet.getLastRow() - 1, 4)
+      .getDisplayValues()
+      .filter(function(row) {
+        return row.some(function(v) { return String(v || '').trim() !== ''; });
+      })
+      .reverse()
+      .map(function(row) {
+        return {
+          title: String(row[0] || '').trim(),
+          image: String(row[1] || '').trim(),
+          url: String(row[2] || '').trim(),
+          date: String(row[3] || '').trim()
+        };
+      });
+  }
+
+  const bossSheet = ss.getSheetByName(BOSS_SHEET_NAME);
+  if (bossSheet) {
+    const bossRows = bossSheet.getRange(2, 2, 2, 7).getDisplayValues(); // B2:H3
+    result.boss = {
+      image: String((bossRows[0] && bossRows[0][2]) || '').trim(),   // D2
+      name: String((bossRows[0] && bossRows[0][0]) || '').trim(),    // B2
+      position: String((bossRows[0] && bossRows[0][1]) || '').trim(),// C2
+      popupImage: String((bossRows[0] && bossRows[0][5]) || '').trim(), // G2
+      popupUrl: String((bossRows[1] && bossRows[1][5]) || '').trim(),   // G3
+      popupMode: String((bossRows[0] && bossRows[0][6]) || 'none').trim().toLowerCase() // H2
+    };
+  }
+
+  return result;
+}
+
+function getHomeSummaryData_() {
+  // ตัวนับเว็บไซต์ยังเพิ่มทุกครั้ง แต่ข้อมูลหนักอื่น cache ไว้
+  const websiteVisitCount = incrementWebsiteVisitCount_();
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'HOME_SUMMARY_COUNTS_V3';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      const data = JSON.parse(cached);
+      data.websiteVisitCount = websiteVisitCount;
+      return data;
+    } catch (ignore) {}
+  }
+
+  const ssMain = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const shUser = ssMain.getSheetByName('user');
+
+  let userTotal = 0, userPrimary = 0, userMiddle = 0, userHigh = 0;
+  if (shUser && shUser.getLastRow() >= 2) {
+    shUser.getRange(2, 9, shUser.getLastRow() - 1, 4).getValues().forEach(function(row) {
+      userPrimary += Number(row[0]) || 0;
+      userMiddle += Number(row[1]) || 0;
+      userHigh += Number(row[2]) || 0;
+      userTotal += Number(row[3]) || 0;
+    });
+  }
+
+  let adminTotal = 0, adminPrimary = 0, adminMiddle = 0, adminHigh = 0;
+  const settingSheet = ssMain.getSheetByName('Sheet');
+  const studentSheetValue = settingSheet
+    ? String(settingSheet.getRange('D12').getValue() || '').trim()
+    : '';
+  const studentSheetMatch = studentSheetValue.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  const studentSheetId = studentSheetMatch ? studentSheetMatch[1] : studentSheetValue;
+
+  if (studentSheetId) {
+    const ssStudent = SpreadsheetApp.openById(studentSheetId);
+    const shStudent = ssStudent.getSheetByName('รายชื่อนักศึกษาทั้งหมด');
+    if (shStudent && shStudent.getLastRow() >= 2) {
+      shStudent.getRange(2, 2, shStudent.getLastRow() - 1, 3).getValues().forEach(function(row) {
+        const studentId = String(row[0] || '').trim();
+        const level = String(row[2] || '').trim();
+        if (!studentId) return;
+        if (level === 'ประถม') adminPrimary++;
+        else if (level === 'ม.ต้น') adminMiddle++;
+        else if (level === 'ม.ปลาย') adminHigh++;
+      });
+      adminTotal = adminPrimary + adminMiddle + adminHigh;
+    }
+  }
+
+  let adminLoginCount = 0, userLoginCount = 0;
+  const shLog = ssMain.getSheetByName('Log');
+  if (shLog && shLog.getLastRow() >= 2) {
+    shLog.getRange(2, 5, shLog.getLastRow() - 1, 1).getDisplayValues().forEach(function(row) {
+      const loginType = String(row[0] || '').trim();
+      if (!loginType) return;
+      if (loginType.toLowerCase() === 'admin') adminLoginCount++;
+      else userLoginCount++;
+    });
+  }
+
+  let registrationCount = 0;
+  const learningBaseSS = SpreadsheetApp.openById(DB_ID);
+  const studentsSheet = learningBaseSS.getSheetByName('students');
+  if (studentsSheet && studentsSheet.getLastRow() >= 2) {
+    registrationCount = studentsSheet
+      .getRange(2, 1, studentsSheet.getLastRow() - 1, 1)
+      .getDisplayValues()
+      .reduce(function(count, row) {
+        return count + (String(row[0] || '').trim() ? 1 : 0);
+      }, 0);
+  }
+
+  const data = {
+    userTotal: userTotal,
+    userPrimary: userPrimary,
+    userMiddle: userMiddle,
+    userHigh: userHigh,
+    adminTotal: adminTotal,
+    adminPrimary: adminPrimary,
+    adminMiddle: adminMiddle,
+    adminHigh: adminHigh,
+    registrationCount: registrationCount,
+    loginCount: adminLoginCount + userLoginCount,
+    adminLoginCount: adminLoginCount,
+    userLoginCount: userLoginCount,
+    websiteVisitCount: websiteVisitCount
+  };
+
+  try {
+    const cacheData = Object.assign({}, data);
+    delete cacheData.websiteVisitCount;
+    cache.put(cacheKey, JSON.stringify(cacheData), 120);
+  } catch (ignore) {}
+
+  return data;
+}
+
+/*
+รีเซต ค่าเป็น 0 เลือกฟังก์ชัน resetWebsiteVisitCount กดปุ่ม Run
+*/
+function resetWebsiteVisitCount() {
+  PropertiesService
+    .getScriptProperties()
+    .setProperty('WEBSITE_VISIT_COUNT', '0');
+
+  console.log('รีเซตจำนวนการเข้าเว็บไซต์เป็น 0 แล้ว');
+}
+function incrementWebsiteVisitCount_() {
+  const propertyName = 'WEBSITE_VISIT_COUNT';
+  const lock = LockService.getScriptLock();
+
+  try {
+    lock.waitLock(10000);
+
+    const properties = PropertiesService.getScriptProperties();
+    const currentCount = Number(properties.getProperty(propertyName)) || 0;
+    const nextCount = currentCount + 1;
+
+    properties.setProperty(propertyName, String(nextCount));
+    return nextCount;
+  } catch (err) {
+    console.error('incrementWebsiteVisitCount_ error:', err);
+    return Number(
+      PropertiesService.getScriptProperties().getProperty(propertyName)
+    ) || 0;
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
+  }
+}
+
+function getAboutPagesData_() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('setting');
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต setting');
+  }
+
+  const contactValues = sheet.getRange('N2:N7').getDisplayValues();
+  const visionRange = sheet.getRange('G2:Q4').getDisplayValues();
+  const heroValues = sheet.getRange('T2:T4').getDisplayValues();
+
+  function findAboutValue_(labels) {
+    const targets = labels.map(label => String(label).replace(/\s+/g, ''));
+
+    for (let rowIndex = 0; rowIndex < visionRange.length; rowIndex++) {
+      const row = visionRange[rowIndex];
+
+      for (let colIndex = 0; colIndex < row.length; colIndex++) {
+        const label = String(row[colIndex] || '').trim().replace(/\s+/g, '');
+        if (targets.indexOf(label) === -1) continue;
+
+        for (let valueIndex = colIndex + 1; valueIndex < row.length; valueIndex++) {
+          const value = String(row[valueIndex] || '').trim();
+          if (value) return value;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  return {
+    contact: {
+      organization: String(contactValues[0][0] || '').trim(),
+      coordinate: String(contactValues[1][0] || '').trim(),
+      address: String(contactValues[2][0] || '').trim(),
+      phone: String(contactValues[3][0] || '').trim(),
+      facebook: String(contactValues[4][0] || '').trim(),
+      line: String(contactValues[5][0] || '').trim()
+    },
+    vision: {
+      vision: findAboutValue_(['วิสัยทัศน์']),
+      identity: findAboutValue_(['อัตลักษณ์', 'เอกลักษณ์']),
+      mission: findAboutValue_(['พันธกิจ'])
+    },
+    hero: {
+      kicker: String(heroValues[0][0] || '').trim(),
+      title: String(heroValues[1][0] || '').trim(),
+      description: String(heroValues[2][0] || '').trim()
+    },
+    footer: {
+      organization: String(contactValues[0][0] || '').trim(),
+      address: String(contactValues[2][0] || '').trim(),
+      phone: String(contactValues[3][0] || '').trim(),
+      description: String(heroValues[1][0] || '').trim()
+    }
+  };
+}
+
+function getEditWebsiteData_(editor) {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const type = String(editor || '').trim().toLowerCase();
+  let sheet, labels, values, headers;
+
+  if (type === 'text') {
+    sheet = ss.getSheetByName('setting');
+    if (!sheet) throw new Error('ไม่พบชีต setting');
+    headers = sheet.getRange('S1:T1').getDisplayValues()[0];
+    labels = sheet.getRange('S2:S4').getDisplayValues().map(function (row) { return row[0]; });
+    values = sheet.getRange('T2:T4').getDisplayValues().map(function (row) { return row[0]; });
+  } else if (type === 'image') {
+    sheet = ss.getSheetByName(WEBSITE_IMAGE_SHEET);
+    if (!sheet) throw new Error('ไม่พบชีต website_image');
+    headers = sheet.getRange('A1:B1').getDisplayValues()[0];
+    labels = sheet.getRange('A2:A4').getDisplayValues().map(function (row) { return row[0]; });
+    values = sheet.getRange('B2:B4').getDisplayValues().map(function (row) { return row[0]; });
+  } else {
+    throw new Error('ประเภทตารางไม่ถูกต้อง');
+  }
+
+  return {
+    success: true,
+    editor: type,
+    headers: headers.map(function (value) { return String(value || ''); }),
+    rows: labels.map(function (label, index) {
+      return { label: String(label || ''), value: String(values[index] || '') };
+    })
+  };
+}
+
+function saveEditWebsiteData_(editor, valuesJson) {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const type = String(editor || '').trim().toLowerCase();
+  let values;
+  try {
+    values = Array.isArray(valuesJson) ? valuesJson : JSON.parse(String(valuesJson || '[]'));
+  } catch (err) {
+    throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+  }
+  if (!Array.isArray(values)) throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (type === 'text') {
+      if (values.length !== 3) throw new Error('ข้อมูลข้อความต้องมี 3 รายการ');
+      const sheet = ss.getSheetByName('setting');
+      if (!sheet) throw new Error('ไม่พบชีต setting');
+      sheet.getRange('T2:T4').setValues(values.map(function (value) { return [String(value || '')]; }));
+    } else if (type === 'image') {
+      if (values.length !== 3) throw new Error('ข้อมูลโลโก้ ชื่อ และรูปหัวเว็บไซต์ต้องมี 3 รายการ');
+      const sheet = ss.getSheetByName(WEBSITE_IMAGE_SHEET);
+      if (!sheet) throw new Error('ไม่พบชีต website_image');
+      sheet.getRange('B2:B4').setValues(values.map(function (value) { return [String(value || '')]; }));
+    } else {
+      throw new Error('ประเภทตารางไม่ถูกต้อง');
+    }
+    SpreadsheetApp.flush();
+    clearHomeFastCache_();
+  } finally {
+    lock.releaseLock();
+  }
+
+  return { success: true, editor: type };
+}
+
+function doPost(e) {
+  try {
+    const content =
+      e &&
+      e.postData &&
+      e.postData.contents
+        ? e.postData.contents
+        : '{}';
+
+    const body = JSON.parse(content);
+
+    const mode = String(body.mode || '').trim();
+    const action = String(body.action || '').trim();
+    const data = body.data || {};
+
+    if (mode === 'adminlogin') {
+      return jsonOutput_(adminLogin_(body.username, body.password));
+    }
+
+    if (mode === 'adminforgot') {
+      return jsonOutput_(sendAdminCredentials_(body.email));
+    }
+
+    if (mode === 'editwebsite') {
+      requireAdminSession_(body.token);
+      return jsonOutput_(getEditWebsiteData_(body.editor));
+    }
+
+    if (mode === 'saveeditwebsite') {
+      requireAdminSession_(body.token);
+      return jsonOutput_(saveEditWebsiteData_(body.editor, body.values));
+    }
+
+    if (mode === 'newsadmin') {
+      requireAdminSession_(body.token);
+      return jsonOutput_({ success: true, data: runNewsAdminAction_(body.action, body.data || {}) });
+    }
+
+    /*
+     * รองรับทั้ง JavaScript รุ่นเดิม:
+     * { mode: "learning", action: "...", data: {...} }
+     *
+     * และรุ่นใหม่:
+     * { action: "...", data: {...} }
+     */
+    if (!action) {
+      throw new Error('ไม่พบคำสั่ง action');
+    }
+
+    if (mode && mode !== 'learning') {
+      throw new Error('Invalid mode');
+    }
+
+    return jsonOutput_({
+      success: true,
+      data: runLearningAction_(action, data)
+    });
+
+  } catch (err) {
+    return jsonOutput_({
+      success: false,
+      message: err.message
+    });
+  }
+}
+
+function getAdminLoginSheet_() {
+  // ผู้ดูแลระบบใช้บัญชีจากชีต library โดยตรง
+  // A = Email/Name, B = Username, C = Password
+  const ss = SpreadsheetApp.openById(ADMIN_LOGIN_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(ADMIN_LOGIN_SHEET_NAME);
+  if (!sheet) throw new Error('ไม่พบชีต ' + ADMIN_LOGIN_SHEET_NAME);
+  return sheet;
+}
+
+function adminLogin_(username, password) {
+  username = String(username || '').trim();
+  password = String(password || '');
+  if (!username || !password) throw new Error('กรุณากรอก Username และ Password');
+
+  const attemptCache = CacheService.getScriptCache();
+  const attemptKey = 'admin-attempt:' + Utilities.base64EncodeWebSafe(username.toLowerCase()).slice(0, 80);
+  const attempts = Number(attemptCache.get(attemptKey) || 0);
+  if (attempts >= 8) throw new Error('เข้าสู่ระบบผิดหลายครั้ง กรุณารอ 10 นาทีแล้วลองใหม่');
+
+  const sheet = getAdminLoginSheet_();
+  const lastRow = sheet.getLastRow();
+  const values = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 3).getDisplayValues() : [];
+  const row = values.find(function (item) {
+    return String(item[1] || '').trim() === username && String(item[2] || '') === password;
+  });
+
+  if (!row) {
+    attemptCache.put(attemptKey, String(attempts + 1), 600);
+    throw new Error('Username หรือ Password ไม่ถูกต้อง');
+  }
+
+  attemptCache.remove(attemptKey);
+  const token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
+  CacheService.getScriptCache().put('admin-session:' + token, JSON.stringify({ username: row[1], email: row[0] }), 21600);
+  return { success: true, token: token, username: String(row[1] || ''), expiresIn: 21600 };
+}
+
+function requireAdminSession_(token) {
+  token = String(token || '').trim();
+  if (!token || !CacheService.getScriptCache().get('admin-session:' + token)) {
+    throw new Error('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่');
+  }
+  return true;
+}
+
+function sendAdminCredentials_(email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!email || email.indexOf('@') === -1) throw new Error('กรุณากรอก Email ให้ถูกต้อง');
+
+  const cache = CacheService.getScriptCache();
+  const cooldownKey = 'admin-forgot:' + Utilities.base64EncodeWebSafe(email).slice(0, 80);
+  if (cache.get(cooldownKey)) throw new Error('เพิ่งส่ง Email ไปแล้ว กรุณารอ 5 นาที');
+
+  const sheet = getAdminLoginSheet_();
+  const lastRow = sheet.getLastRow();
+  const values = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 3).getDisplayValues() : [];
+  const row = values.find(function (item) { return String(item[0] || '').trim().toLowerCase() === email; });
+  if (!row) throw new Error('ไม่พบ Email นี้ในระบบ');
+
+  MailApp.sendEmail({
+    to: String(row[0] || '').trim(),
+    subject: 'ข้อมูลเข้าสู่ระบบจัดการเว็บไซต์',
+    name: 'ระบบจัดการเว็บไซต์',
+    htmlBody: '<div style="font-family:Arial,sans-serif;line-height:1.7"><h2>ข้อมูลเข้าสู่ระบบจัดการเว็บไซต์</h2><p><b>Username:</b> ' + escapeHtmlEmail_(row[1]) + '</p><p><b>Password:</b> ' + escapeHtmlEmail_(row[2]) + '</p><p>หากคุณไม่ได้เป็นผู้ร้องขอ กรุณาแจ้งผู้ดูแลระบบ</p></div>'
+  });
+  cache.put(cooldownKey, '1', 300);
+  return { success: true };
+}
+
+function escapeHtmlEmail_(value) {
+  return String(value || '').replace(/[&<>"']/g, function (character) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character];
+  });
+}
+
+function runLearningAction_(action, data) {
+  setupLearningBaseSheets_();
+
+  switch (String(action || '')) {
+    case 'registerStudent':
+      return registerStudent(data);
+
+    case 'studentLogin':
+      return studentLogin(data.phone);
+
+    case 'updateStudentProfile':
+      return updateStudentProfile(data);
+
+    case 'getActivities':
+      return getActivities();
+
+    case 'addToCart':
+      return addToCart(
+        data.studentId,
+        data.activityId
+      );
+
+    case 'getMyCart':
+      return getMyCart(data.studentId);
+
+    case 'confirmJoin':
+      return confirmJoin(
+        data.studentId,
+        data.activityId
+      );
+
+    case 'getMyHistory':
+      return getMyHistory(data.studentId);
+
+    case 'cancelCart':
+      return cancelCart(data.cartId);
+
+    case 'getStudentTotalHours':
+      return getStudentTotalHours(
+        data.studentId
+      );
+
+    case 'getMyScoreDetail':
+      return getMyScoreDetail(
+        data.studentId
+      );
+
+    default:
+      throw new Error(
+        'Unknown learning action: ' + action
+      );
+  }
+}
+
+function getWebsiteImages() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(WEBSITE_IMAGE_SHEET);
+
+  if (!sheet) {
+    return {};
+  }
+
+  return {
+    brandIcon: sheet.getRange("B2").getDisplayValue().trim(),
+    siteTitle: sheet.getRange("B3").getDisplayValue().trim(),
+    heroImage: sheet.getRange("B4").getDisplayValue().trim(),
+    heroTitle1: sheet.getRange("B5").getDisplayValue().trim(),
+    heroTitle2: sheet.getRange("B6").getDisplayValue().trim(),
+
+    // รายการเมนูจากชีต setting คอลัมน์ D:F
+    settingMenus: getSettingMenus_(),
+
+    // Dropdown ใน main-nav: H:I = สกร.ระดับตำบล, J:K = ห้องสมุด
+    mainNavMenus: getMainNavMenus_()
+  };
+}
+
+/**
+ * รายการ Dropdown สำหรับ main-nav จากชีต setting
+ * H = ชื่อ สกร.ระดับตำบล, I = URL
+ * J = ชื่อห้องสมุด, K = URL
+ */
+function getMainNavMenus_() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('setting');
+
+  if (!sheet || sheet.getLastRow() < 2) {
+    return { districts: [], libraries: [] };
+  }
+
+  const values = sheet
+    .getRange(2, 8, sheet.getLastRow() - 1, 4)
+    .getDisplayValues();
+
+  const districts = [];
+  const libraries = [];
+
+  values.forEach(function (row) {
+    const districtName = String(row[0] || '').trim();
+    const districtUrl = String(row[1] || '').trim();
+    const libraryName = String(row[2] || '').trim();
+    const libraryUrl = String(row[3] || '').trim();
+
+    if (districtName && districtUrl) {
+      districts.push({ name: districtName, url: districtUrl });
+    }
+
+    if (libraryName && libraryUrl) {
+      libraries.push({ name: libraryName, url: libraryUrl });
+    }
+  });
+
+  return {
+    districts: districts,
+    libraries: libraries
+  };
+}
+
+/**
+ * รวมรายการ Best Practice จาก Spreadsheet ของแต่ละตำบล
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: best_practice!B2:C = Poster, Open file
+ */
+function getBestPracticeItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'BEST_PRACTICE_ITEMS_V1';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const sourceRows = sourceSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+
+  const items = [];
+
+  sourceRows.forEach(function(row) {
+    const areaName = String(row[0] || '').trim();
+    const spreadsheetId = extractSpreadsheetId_(row[1]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('best_practice');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 2, sheet.getLastRow() - 1, 2)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const poster = String(value[0] || '').trim();
+        const fileUrl = String(value[1] || '').trim();
+
+        if (!poster && !fileUrl) return;
+
+        items.push({
+          poster: poster,
+          fileUrl: fileUrl,
+          area: areaName,
+          spreadsheetId: spreadsheetId
+        });
+      });
+    } catch (err) {
+      console.warn(
+        'ข้าม Spreadsheet ของ ' + (areaName || spreadsheetId) + ': ' + err.message
+      );
+    }
+  });
+
+  // ลดจำนวนครั้งที่ต้องเปิด Spreadsheet หลายไฟล์พร้อมกัน
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+/**
+ * รวมสื่อ/นวัตกรรมจาก Spreadsheet ของแต่ละตำบล
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: Innovation!B2:E
+ * B = ประเภทสื่อ, C = ชื่อสื่อ, D = Poster, E = Open Url
+ */
+function getInnovationItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'INNOVATION_ITEMS_V1';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const sourceRows = sourceSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+
+  const items = [];
+
+  sourceRows.forEach(function(row) {
+    const areaName = String(row[0] || '').trim();
+    const spreadsheetId = extractSpreadsheetId_(row[1]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('Innovation');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 2, sheet.getLastRow() - 1, 4)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const mediaType = String(value[0] || '').trim();
+        const mediaName = String(value[1] || '').trim();
+        const poster = String(value[2] || '').trim();
+        const openUrl = String(value[3] || '').trim();
+
+        if (!mediaType && !mediaName && !poster && !openUrl) return;
+
+        items.push({
+          mediaType: mediaType,
+          mediaName: mediaName,
+          poster: poster,
+          openUrl: openUrl,
+          area: areaName,
+          spreadsheetId: spreadsheetId
+        });
+      });
+    } catch (err) {
+      console.warn(
+        'ข้าม Spreadsheet ของ ' + (areaName || spreadsheetId) + ': ' + err.message
+      );
+    }
+  });
+
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+/**
+ * รวมคลังสื่อการสอนจาก Spreadsheet ของแต่ละตำบล
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: media!B2:H
+ * B = ประเภทสื่อ, C = เรื่อง, D = วิชา, E = ชั้น,
+ * F = Url File, G = ภาพผลงาน, H = เจ้าของผลงาน
+ */
+function getMediaItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'TEACHING_MEDIA_ITEMS_V1';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const sourceRows = sourceSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+
+  const items = [];
+
+  sourceRows.forEach(function(row) {
+    const areaName = String(row[0] || '').trim();
+    const spreadsheetId = extractSpreadsheetId_(row[1]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('media');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 2, sheet.getLastRow() - 1, 7)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const mediaType = String(value[0] || '').trim();
+        const title = String(value[1] || '').trim();
+        const subject = String(value[2] || '').trim();
+        const grade = String(value[3] || '').trim();
+        const fileUrl = String(value[4] || '').trim();
+        const image = String(value[5] || '').trim();
+        const owner = String(value[6] || '').trim();
+
+        if (!mediaType && !title && !subject && !grade &&
+            !fileUrl && !image && !owner) return;
+
+        items.push({
+          mediaType: mediaType,
+          title: title,
+          subject: subject,
+          grade: grade,
+          fileUrl: fileUrl,
+          image: image,
+          owner: owner,
+          area: areaName
+        });
+      });
+    } catch (err) {
+      console.warn(
+        'ข้าม Spreadsheet ของ ' + (areaName || spreadsheetId) + ': ' + err.message
+      );
+    }
+  });
+
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+/**
+ * รวมรางวัลและเกียรติบัตรจาก Spreadsheet ของแต่ละตำบล
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: reward!B2:J
+ * B = รางวัล, C = หน่วยงาน, D = วันที่ได้รับ, E = ผู้ได้รับรางวัล,
+ * F = รูปภาพรางวัล, G:I = รูปประกอบ, J = URL รายละเอียดเพิ่มเติม
+ */
+function getRewardItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'REWARD_ITEMS_V2_COLUMNS';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const sourceRows = sourceSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+  const items = [];
+
+  sourceRows.forEach(function(row) {
+    const areaName = String(row[0] || '').trim();
+    const spreadsheetId = extractSpreadsheetId_(row[1]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('reward');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 2, sheet.getLastRow() - 1, 9)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const award = String(value[0] || '').trim();
+        const organization = String(value[1] || '').trim();
+        const receivedDate = String(value[2] || '').trim();
+        const recipient = String(value[3] || '').trim();
+        const mainImage = String(value[4] || '').trim();
+        const image1 = String(value[5] || '').trim();
+        const image2 = String(value[6] || '').trim();
+        const image3 = String(value[7] || '').trim();
+        const detailUrl = String(value[8] || '').trim();
+
+        if (!mainImage && !award && !recipient && !organization &&
+            !image1 && !image2 && !image3 && !receivedDate && !detailUrl) return;
+
+        items.push({
+          mainImage: mainImage,
+          award: award,
+          recipient: recipient,
+          organization: organization,
+          images: [image1, image2, image3],
+          receivedDate: receivedDate,
+          detailUrl: detailUrl,
+          area: areaName
+        });
+      });
+    } catch (err) {
+      console.warn(
+        'ข้าม Spreadsheet ของ ' + (areaName || spreadsheetId) + ': ' + err.message
+      );
+    }
+  });
+
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+/**
+ * รวมคลังหลักสูตรจาก Spreadsheet ของแต่ละตำบล
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: course!B2:E
+ * B = หลักสูตร, C = ผู้เสนอหลักสูตร, D = วันที่อัปโหลดไฟล์,
+ * E = URL ดาวน์โหลดไฟล์
+ */
+function getCourseItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'COURSE_ITEMS_V1';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const sourceRows = sourceSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+  const items = [];
+
+  sourceRows.forEach(function(row) {
+    const areaName = String(row[0] || '').trim();
+    const spreadsheetId = extractSpreadsheetId_(row[1]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('course');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 2, sheet.getLastRow() - 1, 4)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const courseName = String(value[0] || '').trim();
+        const teacherName = String(value[1] || '').trim();
+        const uploadDate = String(value[2] || '').trim();
+        const fileUrl = String(value[3] || '').trim();
+
+        if (!courseName && !teacherName && !uploadDate && !fileUrl) return;
+
+        items.push({
+          courseName: courseName,
+          teacherName: teacherName,
+          uploadDate: uploadDate,
+          fileUrl: fileUrl,
+          area: areaName
+        });
+      });
+    } catch (err) {
+      console.warn(
+        'ข้าม Spreadsheet ของ ' + (areaName || spreadsheetId) + ': ' + err.message
+      );
+    }
+  });
+
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+
+/**
+ * รวมโพสต์ Facebook จาก Spreadsheet ของแต่ละพื้นที่
+ * ชีตหลัก: แหล่งเรียนรู้!B2:B = Spreadsheet ID
+ * ชีตปลายทาง: facebook!A2:C
+ * A = ชื่อตำบล/พื้นที่, B = iframe embed Facebook, C = วันที่
+ */
+function getFacebookItems_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'FACEBOOK_ITEMS_V1';
+  const cached = cache.get(cacheKey);
+
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (ignore) {}
+  }
+
+  const master = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sourceSheet = master.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sourceSheet) {
+    throw new Error('ไม่พบชีตชื่อ แหล่งเรียนรู้');
+  }
+
+  const lastRow = sourceSheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const spreadsheetValues = sourceSheet
+    .getRange(2, 2, lastRow - 1, 1)
+    .getDisplayValues();
+
+  const items = [];
+
+  spreadsheetValues.forEach(function(row) {
+    const spreadsheetId = extractSpreadsheetId_(row[0]);
+    if (!spreadsheetId) return;
+
+    try {
+      const child = SpreadsheetApp.openById(spreadsheetId);
+      const sheet = child.getSheetByName('facebook');
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const values = sheet
+        .getRange(2, 1, sheet.getLastRow() - 1, 3)
+        .getDisplayValues();
+
+      values.forEach(function(value) {
+        const area = String(value[0] || '').trim();
+        const iframeCode = String(value[1] || '').trim();
+        const date = String(value[2] || '').trim();
+
+        if (!iframeCode) return;
+
+        const srcMatch = iframeCode.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+        if (!srcMatch) return;
+
+        const embedUrl = String(srcMatch[1] || '')
+          .replace(/&amp;/g, '&')
+          .trim();
+
+        if (!/^https:\/\/www\.facebook\.com\/plugins\/post\.php\?/i.test(embedUrl)) {
+          return;
+        }
+
+        const hrefMatch = embedUrl.match(/[?&]href=([^&]+)/i);
+        let facebookUrl = '';
+
+        if (hrefMatch) {
+          try {
+            facebookUrl = decodeURIComponent(hrefMatch[1]);
+          } catch (ignore) {
+            facebookUrl = hrefMatch[1];
+          }
+        }
+
+        if (!/^https:\/\/(www\.)?facebook\.com\//i.test(facebookUrl)) {
+          return;
+        }
+
+        items.push({
+          area: area,
+          date: date,
+          embedUrl: embedUrl,
+          facebookUrl: facebookUrl,
+          spreadsheetId: spreadsheetId
+        });
+      });
+    } catch (err) {
+      console.warn('ข้าม Spreadsheet ' + spreadsheetId + ': ' + err.message);
+    }
+  });
+
+  try {
+    cache.put(cacheKey, JSON.stringify(items), 300);
+  } catch (ignore) {}
+
+  return items;
+}
+
+function extractSpreadsheetId_(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const urlMatch = text.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (urlMatch) return urlMatch[1];
+
+  return /^[a-zA-Z0-9_-]{20,}$/.test(text) ? text : '';
+}
+/**
+ * อ่านรายการเมนูจากชีต setting
+ * D = ชื่อเมนู
+ * E = ชื่อขยาย
+ * F = URL รูปไอคอน
+ */
+function getSettingMenus_() {
+  const ss = SpreadsheetApp.openById(
+    WEBSITE_SPREADSHEET_ID
+  );
+
+  const sheet = ss.getSheetByName('setting');
+
+  if (!sheet || sheet.getLastRow() < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(
+      2,                    // เริ่มแถว 2
+      4,                    // เริ่มคอลัมน์ D
+      sheet.getLastRow() - 1,
+      3                     // D, E และ F
+    )
+    .getDisplayValues();
+
+  return values
+    .filter(row =>
+      row.some(value =>
+        String(value || '').trim() !== ''
+      )
+    )
+    .map(row => ({
+      title: String(row[0] || '').trim(),
+      subtitle: String(row[1] || '').trim(),
+      icon: String(row[2] || '').trim()
+    }))
+    .slice(0, 6);
+}
+/**
+ * ใช้แทนฟังก์ชัน getNewsSlides() เดิมใน Google Apps Script
+ * ชีต: news_page
+ * B = หัวข้อหลัก
+ * C = URL รูปภาพโปสเตอร์ข่าว
+ * D = รายละเอียดโดยย่อ
+ * E = URL รายละเอียด (เว้นว่างได้)
+ * F = วันที่ลงข่าว
+ * J1 = block เพื่อสไลด์หลายภาพ / none เพื่อแสดงภาพเดียว
+ */
+function getNewsSlides() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('news_page');
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต news_page');
+  }
+
+  const mode = String(sheet.getRange('J1').getDisplayValue() || 'none')
+    .trim()
+    .toLowerCase();
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return {
+      mode: mode,
+      slides: []
+    };
+  }
+
+  // อ่าน B2:F ตามจำนวนแถวจริง
+  const rows = sheet
+    .getRange(2, 2, lastRow - 1, 5)
+    .getDisplayValues();
+
+  let slides = rows
+    .map(function (row, index) {
+      return {
+        newsNo: index + 1,
+        title: String(row[0] || '').trim(),
+        image: String(row[1] || '').trim(),
+        detail: String(row[2] || '').trim(),
+        detailUrl: String(row[3] || '').trim(),
+        date: String(row[4] || '').trim()
+      };
+    })
+    .filter(function (item) {
+      return item.image !== '';
+    });
+
+  // none = แสดงเฉพาะข่าวแรก
+  if (mode !== 'block' && slides.length > 1) {
+    slides = slides.slice(0, 1);
+  }
+
+  return {
+    mode: mode,
+    slides: slides
+  };
+}
+
+function getNewsAdminSheet_() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(NEWS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(NEWS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 6).setValues([['ข่าวที่','หัวข้อหลัก','URLรูปภาพโปสเตอร์ข่าว','รายละเอียดโดยย่อ','URL กดดูรายละเอียด','วันที่ลงข่าว']]);
+  }
+  return sheet;
+}
+
+function runNewsAdminAction_(action, data) {
+  action = String(action || '').trim().toLowerCase();
+  if (action === 'list') return getNewsAdminData_();
+  if (action === 'save') return saveNewsAdmin_(data);
+  if (action === 'delete') return deleteNewsAdmin_(data.rowNumber);
+  if (action === 'move') return moveNewsAdmin_(data.rowNumber, data.direction);
+  if (action === 'mode') return setNewsAdminMode_(data.value);
+  throw new Error('คำสั่งจัดการข่าวสารไม่ถูกต้อง');
+}
+
+function getNewsAdminData_() {
+  const sheet = getNewsAdminSheet_();
+  const lastRow = sheet.getLastRow();
+  const rows = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 6).getDisplayValues() : [];
+  const mode = String(sheet.getRange('J1').getDisplayValue() || 'none').trim().toLowerCase() === 'block' ? 'block' : 'none';
+  return {
+    mode: mode,
+    items: rows.map(function (row, index) {
+      return { rowNumber:index + 2, newsNo:row[0], title:row[1], imageUrl:row[2], detail:row[3], detailUrl:row[4], postDate:row[5] };
+    }).filter(function (item) { return item.title || item.imageUrl || item.detail || item.detailUrl; })
+  };
+}
+
+function saveNewsAdmin_(data) {
+  data = data || {};
+  const title = String(data.title || '').trim();
+  const imageUrl = String(data.imageUrl || '').trim();
+  const detail = String(data.detail || '').trim();
+  const detailUrl = String(data.detailUrl || '').trim();
+  if (!title || !imageUrl || !detail || !detailUrl) throw new Error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+  const sheet = getNewsAdminSheet_();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const rowNumber = Number(data.rowNumber || 0);
+    if (rowNumber) {
+      if (rowNumber < 2 || rowNumber > sheet.getLastRow()) throw new Error('ไม่พบแถวข่าวนี้');
+      sheet.getRange(rowNumber, 2, 1, 4).setValues([[title,imageUrl,detail,detailUrl]]);
+    } else {
+      sheet.insertRowAfter(1);
+      sheet.getRange(2, 1, 1, 6).setValues([[1,title,imageUrl,detail,detailUrl,formatNewsThaiDate_(new Date())]]);
+      reorderNewsAdmin_(sheet);
+    }
+    SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  clearHomeFastCache_();
+  return true;
+}
+
+function deleteNewsAdmin_(rowNumber) {
+  const sheet = getNewsAdminSheet_();
+  const row = Number(rowNumber);
+  if (row < 2 || row > sheet.getLastRow()) throw new Error('ไม่พบแถวข่าวนี้');
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try { sheet.deleteRow(row); reorderNewsAdmin_(sheet); SpreadsheetApp.flush(); } finally { lock.releaseLock(); }
+  clearHomeFastCache_();
+  return true;
+}
+
+function moveNewsAdmin_(rowNumber, direction) {
+  const sheet = getNewsAdminSheet_();
+  const row = Number(rowNumber), lastRow = sheet.getLastRow();
+  if (row < 2 || row > lastRow) throw new Error('ไม่พบแถวข่าวนี้');
+  direction = String(direction || '').toLowerCase();
+  const target = direction === 'up' ? row - 1 : direction === 'down' ? row + 1 : row;
+  if (target < 2 || target > lastRow || target === row) return true;
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const current = sheet.getRange(row,1,1,6).getValues();
+    const other = sheet.getRange(target,1,1,6).getValues();
+    sheet.getRange(row,1,1,6).setValues(other); sheet.getRange(target,1,1,6).setValues(current);
+    reorderNewsAdmin_(sheet); SpreadsheetApp.flush();
+  } finally { lock.releaseLock(); }
+  clearHomeFastCache_();
+  return true;
+}
+
+function setNewsAdminMode_(value) {
+  const mode = String(value || '').toLowerCase() === 'block' ? 'block' : 'none';
+  getNewsAdminSheet_().getRange('J1').setValue(mode);
+  clearHomeFastCache_();
+  return mode;
+}
+
+function reorderNewsAdmin_(sheet) {
+  const count = sheet.getLastRow() - 1;
+  if (count < 1) return;
+  const values = Array.from({length:count}, function (_, index) { return [index + 1]; });
+  sheet.getRange(2,1,count,1).setValues(values);
+}
+
+function formatNewsThaiDate_(date) {
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return date.getDate() + ' ' + months[date.getMonth()] + ' ' + (date.getFullYear() + 543);
+}
+
+/*
+ใน doGet(e) ต้องมีส่วนนี้อยู่แล้ว:
+
+if (mode === 'news') {
+  const news = getNewsSlides();
+
+  return jsonOutput_({
+    success: true,
+    mode: news.mode,
+    slides: news.slides
+  });
+}
+*/
+
+
+function normalizePublicImageUrl_(url) {
+  const value = String(url || '').trim();
+  if (!value) return '';
+
+  const driveMatch = value.match(/[-\w]{25,}/);
+  if (value.includes('drive.google.com') && driveMatch) {
+    return 'https://lh3.googleusercontent.com/d/' + driveMatch[0];
+  }
+
+  return value;
+}
+
+const DB_ID = "1nQw8OwHzSkKc9raprW3t9JDWFPLz_gTmztKzc49rFSc"; // ฐานข้อมูลระบบฐานการเรียนรู้ / ช้อปกิจกรรม
+const LINE_CHANNEL_ACCESS_TOKEN = ""; // ถ้ายังไม่มี เว้นว่างได้
+
+
+const SHEETS = {
+  students: "students",
+  teachers: "teachers",
+  activities: "activities",
+  carts: "carts",
+  joins: "joins",
+  score: "score"
+};
+const ACTIVITY_IMAGE_FOLDER_ID = "1zrD-Dfc8pm0fYB1vJBfQ5k1w72VAEMEu";
+// โฟลเดอร์เก็บรูปผู้ลงทะเบียน เปลี่ยนเป็น Folder ID อื่นได้
+const STUDENT_IMAGE_FOLDER_ID = ACTIVITY_IMAGE_FOLDER_ID;
+
+
+function uploadStudentPhoto_(base64, filename) {
+  if (!base64) return "";
+
+  const match = String(base64).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("รูปภาพมีรูปแบบไม่ถูกต้อง");
+  }
+
+  const contentType = match[1];
+  const bytes = Utilities.base64Decode(match[2]);
+  if (bytes.length > 5 * 1024 * 1024) {
+    throw new Error("รูปภาพต้องมีขนาดไม่เกิน 5 MB");
+  }
+
+  const safeName = String(filename || ("student-" + Date.now() + ".jpg"))
+    .replace(/[\\/:*?"<>|]/g, "_");
+  const blob = Utilities.newBlob(bytes, contentType, safeName);
+
+  const file = Drive.Files.insert(
+    {
+      title: safeName,
+      parents: [{ id: STUDENT_IMAGE_FOLDER_ID }]
+    },
+    blob
+  );
+
+  Drive.Permissions.insert(
+    {
+      role: "reader",
+      type: "anyone"
+    },
+    file.id
+  );
+
+  return "https://lh3.googleusercontent.com/d/" + file.id;
+}
+
+function uploadActivityImage(base64, filename) {
+  if (!base64) {
+    return { ok: false, message: "ไม่พบไฟล์รูป" };
+  }
+
+  const contentType = base64.match(/^data:(.*?);base64,/)[1];
+  const bytes = Utilities.base64Decode(base64.split(",")[1]);
+  const blob = Utilities.newBlob(bytes, contentType, filename || "activity.jpg");
+
+  const file = Drive.Files.insert(
+    {
+      title: filename || "activity.jpg",
+      parents: [{ id: ACTIVITY_IMAGE_FOLDER_ID }]
+    },
+    blob
+  );
+
+  Drive.Permissions.insert(
+    {
+      role: "reader",
+      type: "anyone"
+    },
+    file.id
+  );
+
+  return {
+    ok: true,
+    fileId: file.id,
+    url: "https://lh3.googleusercontent.com/d/" + file.id
+  };
+}
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function ss_() {
+  return SpreadsheetApp.openById(DB_ID);
+}
+
+function setupLearningBaseSheets_() {
+  const ss = ss_();
+  createSheet_(ss, SHEETS.students, [
+    "studentId", "fullname", "phone", "address", "createdAt", "photo"
+  ]);
+  ensureHeader_(ss.getSheetByName(SHEETS.students), "photo");
+  // Keep student phone numbers as text so leading zero is preserved.
+  ss.getSheetByName(SHEETS.students).getRange('C:C').setNumberFormat('@');
+createSheet_(ss, SHEETS.score, [
+  "fullname", "phone", "address", "confirmedAt", "actualHours",
+  "studentId", "activityId", "teacherId", "savedAt"
+]);
+
+createSheet_(ss, SHEETS.activities, [
+  "activityId", "teacherId", "baseNo", "hours", "title", "learningType",
+  "detail", "image1", "image2", "image3", "activityDate",
+  "status", "createdAt"
+]);
+
+  createSheet_(ss, SHEETS.teachers, [
+    "teacherId", "username", "password", "teacherName", "teacherImage",
+    "baseName", "email", "lineUserId", "createdAt"
+  ]);
+
+
+  createSheet_(ss, SHEETS.carts, [
+    "cartId", "studentId", "activityId", "status", "createdAt"
+  ]);
+
+createSheet_(ss, SHEETS.joins, [
+  "joinId", "studentId", "activityId", "teacherId",
+  "hours", "actualHours", "joinStatus", "createdAt"
+]);
+}
+
+function createSheet_(ss, name, headers) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  if (sh.getLastRow() === 0) sh.appendRow(headers);
+}
+function ensureHeader_(sheet, headerName) {
+  if (!sheet) return;
+  const lastColumn = Math.max(sheet.getLastColumn(), 1);
+  const headers = sheet.getRange(1, 1, 1, lastColumn).getDisplayValues()[0];
+  if (!headers.includes(headerName)) {
+    sheet.getRange(1, lastColumn + 1).setValue(headerName);
+  }
+}
+
+function uid_(prefix) {
+  return prefix + "_" + Date.now() + "_" + Math.floor(Math.random() * 99999);
+}
+
+function getData_(sheetName) {
+  const sh = ss_().getSheetByName(sheetName);
+  const values = sh.getDataRange().getDisplayValues();
+  if (values.length < 2) return [];
+  const headers = values[0];
+  return values.slice(1).filter(r => r.join("") !== "").map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+}
+
+function append_(sheetName, row) {
+  ss_().getSheetByName(sheetName).appendRow(row);
+}
+function deleteSavedScore(data){
+
+  const studentId =
+    String(data.studentId || "").trim();
+
+  const activityId =
+    String(data.activityId || "").trim();
+
+  const sh =
+    ss_().getSheetByName(SHEETS.score);
+
+  const values =
+    sh.getDataRange().getValues();
+
+  for (let i = values.length - 1; i >= 1; i--) {
+
+    if (
+      String(values[i][5]).trim() === studentId &&
+      String(values[i][6]).trim() === activityId
+    ) {
+
+      sh.deleteRow(i + 1);
+
+      return {
+        ok: true,
+        message: "ลบรายการสำเร็จ"
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    message: "ไม่พบรายการ"
+  };
+}
+function registerStudent(data) {
+  setupLearningBaseSheets_();
+
+  const fullname = String(data.fullname || "").trim();
+  const phone = String(data.phone || "").trim();
+  const address = String(data.address || "").trim();
+  const photoBase64 = String(data.photoBase64 || "");
+  const photoName = String(data.photoName || "").trim();
+
+  if (!fullname) {
+    return { ok: false, message: "กรุณากรอกชื่อ-นามสกุล" };
+  }
+
+  if (!phone) {
+    return { ok: false, message: "กรุณากรอกเบอร์โทร" };
+  }
+
+  if (!/^[0-9]{9,10}$/.test(phone)) {
+    return { ok: false, message: "เบอร์โทรต้องเป็นตัวเลข 9-10 หลัก" };
+  }
+
+  const students = getData_(SHEETS.students);
+  const exists = students.find(s =>
+    normalizePhone_(s.phone) === normalizePhone_(phone)
+  );
+
+  if (exists) {
+    return {
+      ok: false,
+      message: "เบอร์โทรนี้ถูกลงทะเบียนแล้ว"
+    };
+  }
+
+  let photo = "";
+  if (photoBase64) {
+    photo = uploadStudentPhoto_(photoBase64, photoName);
+  }
+
+  const studentId = uid_("STU");
+
+  append_(SHEETS.students, [
+    studentId,
+    fullname,
+    phone,
+    address,
+    new Date(),
+    photo
+  ]);
+
+  // Google Sheets may auto-convert a phone such as 0619042117 to a number
+  // and drop the first 0. Force the newly saved phone cell to plain text.
+  const studentSheet = ss_().getSheetByName(SHEETS.students);
+  const newStudentRow = studentSheet.getLastRow();
+  studentSheet
+    .getRange(newStudentRow, 3)
+    .setNumberFormat('@')
+    .setValue(phone);
+
+  return {
+    ok: true,
+    student: {
+      studentId,
+      fullname,
+      phone,
+      address,
+      photo
+    },
+    message: "ลงทะเบียนสำเร็จ"
+  };
+}
+function updateStudentProfile(data) {
+  setupLearningBaseSheets_();
+
+  data = data || {};
+
+  const studentId = String(
+    data.studentId || ''
+  ).trim();
+
+  const fullname = String(
+    data.fullname || ''
+  ).trim();
+
+  const phone = normalizePhone_(
+    data.phone
+  );
+
+  const address = String(
+    data.address || ''
+  ).trim();
+
+  const photoBase64 = String(
+    data.photoBase64 || ''
+  );
+
+  const photoName = String(
+    data.photoName || ''
+  ).trim();
+
+  const removePhoto =
+    data.removePhoto === true ||
+    String(data.removePhoto).toLowerCase() === 'true';
+
+  if (!studentId) {
+    return {
+      ok: false,
+      message: 'ไม่พบรหัสผู้ใช้งาน'
+    };
+  }
+
+  if (!fullname) {
+    return {
+      ok: false,
+      message: 'กรุณากรอกชื่อ-นามสกุล'
+    };
+  }
+
+  if (!phone) {
+    return {
+      ok: false,
+      message: 'กรุณากรอกเบอร์โทร'
+    };
+  }
+
+  if (!/^0\d{9}$/.test(phone)) {
+    return {
+      ok: false,
+      message: 'เบอร์โทรต้องขึ้นต้นด้วย 0 และมี 10 หลัก'
+    };
+  }
+
+  const sheet = ss_().getSheetByName(
+    SHEETS.students
+  );
+
+  if (!sheet) {
+    return {
+      ok: false,
+      message: 'ไม่พบชีต students'
+    };
+  }
+
+  const values = sheet
+    .getDataRange()
+    .getValues();
+
+  if (values.length < 2) {
+    return {
+      ok: false,
+      message: 'ไม่พบข้อมูลผู้ใช้งาน'
+    };
+  }
+
+  const headers = values[0].map(value =>
+    String(value || '').trim()
+  );
+
+  const studentIdCol =
+    headers.indexOf('studentId');
+
+  const fullnameCol =
+    headers.indexOf('fullname');
+
+  const phoneCol =
+    headers.indexOf('phone');
+
+  const addressCol =
+    headers.indexOf('address');
+
+  const photoCol =
+    headers.indexOf('photo');
+
+  if (
+    studentIdCol === -1 ||
+    fullnameCol === -1 ||
+    phoneCol === -1 ||
+    addressCol === -1 ||
+    photoCol === -1
+  ) {
+    return {
+      ok: false,
+      message: 'โครงสร้างชีต students ไม่ถูกต้อง'
+    };
+  }
+
+  let targetRow = -1;
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      String(
+        values[i][studentIdCol] || ''
+      ).trim() === studentId
+    ) {
+      targetRow = i + 1;
+      break;
+    }
+  }
+
+  if (targetRow === -1) {
+    return {
+      ok: false,
+      message: 'ไม่พบข้อมูลผู้ใช้งาน'
+    };
+  }
+
+  /*
+   * ป้องกันไม่ให้เบอร์โทรซ้ำกับบัญชีอื่น
+   */
+  for (let i = 1; i < values.length; i++) {
+    const rowStudentId = String(
+      values[i][studentIdCol] || ''
+    ).trim();
+
+    const rowPhone = normalizePhone_(
+      values[i][phoneCol]
+    );
+
+    if (
+      rowStudentId !== studentId &&
+      rowPhone === phone
+    ) {
+      return {
+        ok: false,
+        message: 'เบอร์โทรนี้ถูกใช้งานโดยบัญชีอื่นแล้ว'
+      };
+    }
+  }
+
+  let photo = String(
+    sheet
+      .getRange(targetRow, photoCol + 1)
+      .getDisplayValue() || ''
+  ).trim();
+
+  /*
+   * ถ้ากดลบรูป ให้ล้าง URL เดิม
+   */
+  if (removePhoto) {
+    photo = '';
+  }
+
+  /*
+   * ถ้าเลือกรูปใหม่ ให้อัปโหลดและแทน URL เดิม
+   */
+  if (photoBase64) {
+    photo = uploadStudentPhoto_(
+      photoBase64,
+      photoName ||
+        `student-${studentId}-${Date.now()}.jpg`
+    );
+  }
+
+  sheet
+    .getRange(targetRow, fullnameCol + 1)
+    .setValue(fullname);
+
+  sheet
+    .getRange(targetRow, phoneCol + 1)
+    .setNumberFormat('@')
+    .setValue(phone);
+
+  sheet
+    .getRange(targetRow, addressCol + 1)
+    .setValue(address);
+
+  sheet
+    .getRange(targetRow, photoCol + 1)
+    .setValue(photo);
+
+  SpreadsheetApp.flush();
+
+  return {
+    ok: true,
+    message: 'บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว',
+    student: {
+      studentId,
+      fullname,
+      phone,
+      address,
+      photo
+    }
+  };
+}
+function getPublicActivities_() {
+  const sheet = SpreadsheetApp
+    .openById(WEBSITE_SPREADSHEET_ID)
+    .getSheetByName('activity');
+
+  if (!sheet) {
+    return [];
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, 4)
+    .getDisplayValues();
+
+  return values
+    .filter(row =>
+      row.some(value => String(value || '').trim() !== '')
+    )
+    .reverse()
+    .map(row => ({
+      title: String(row[0] || '').trim(),
+      image: String(row[1] || '').trim(),
+      url: String(row[2] || '').trim(),
+      date: String(row[3] || '').trim()
+    }));
+}
+
+function addToCart(studentId, activityId) {
+  if (!studentId) return { ok: false, message: "กรุณายืนยันตัวตนก่อน" };
+
+  const carts = getData_(SHEETS.carts);
+  const exists = carts.find(c =>
+    c.studentId === studentId &&
+    c.activityId === activityId &&
+    c.status === "IN_CART"
+  );
+
+  if (exists) return { ok: false, message: "กิจกรรมนี้อยู่ในตะกร้าแล้ว" };
+
+  append_(SHEETS.carts, [
+    uid_("CART"), studentId, activityId, "IN_CART", new Date()
+  ]);
+
+  return { ok: true, message: "เพิ่มลงตะกร้าแล้ว" };
+}
+
+function getMyCart(studentId) {
+  const carts = getData_(SHEETS.carts).filter(c =>
+    c.studentId === studentId && c.status === "IN_CART"
+  );
+
+  const activities = getActivities();
+
+  return carts.map(c => {
+    const a = activities.find(x => x.activityId === c.activityId) || {};
+    return { ...c, activity: a };
+  });
+}
+
+function confirmJoin(studentId, activityId) {
+  if (!studentId) return { ok: false, message: "กรุณายืนยันตัวตนก่อน" };
+
+  const sid = String(studentId || "").trim();
+  const aid = String(activityId || "").trim();
+
+  const joins = getData_(SHEETS.joins);
+  const activities = getData_(SHEETS.activities);
+  const teachers = getData_(SHEETS.teachers);
+  const students = getData_(SHEETS.students);
+
+  const activity = activities.find(a =>
+    String(a.activityId || "").trim() === aid
+  );
+
+  if (!activity) return { ok: false, message: "ไม่พบกิจกรรม" };
+
+  const student = students.find(s =>
+    String(s.studentId || "").trim() === sid
+  );
+
+  if (!student) {
+    return {
+      ok: false,
+      message: "ไม่พบข้อมูลผู้สมัคร กรุณา Login ใหม่อีกครั้ง"
+    };
+  }
+
+  const exists = joins.find(j =>
+    String(j.studentId || "").trim() === sid &&
+    String(j.activityId || "").trim() === aid
+  );
+
+  if (exists) {
+    return { ok: false, message: "คุณยืนยันเข้าร่วมกิจกรรมนี้แล้ว" };
+  }
+
+append_(SHEETS.joins, [
+  uid_("JOIN"),
+  sid,
+  aid,
+  String(activity.teacherId || "").trim(),
+  activity.hours || "",
+  "",
+  "CONFIRMED",
+  new Date()
+]);
+
+  markCartConfirmed_(sid, aid);
+
+  const teacher = teachers.find(t =>
+    String(t.teacherId || "").trim() === String(activity.teacherId || "").trim()
+  ) || {};
+
+  notifyTeacher_(teacher, student, activity);
+
+  return { ok: true, message: "ยืนยันเข้าร่วมกิจกรรมสำเร็จ" };
+}
+
+function markCartConfirmed_(studentId, activityId) {
+  const sh = ss_().getSheetByName(SHEETS.carts);
+  const values = sh.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][1] === studentId && values[i][2] === activityId) {
+      sh.getRange(i + 1, 4).setValue("CONFIRMED");
+    }
+  }
+}
+
+function getMyHistory(studentId) {
+  const joins = getData_(SHEETS.joins).filter(j => j.studentId === studentId);
+  const activities = getActivities();
+
+  return joins.map(j => ({
+    ...j,
+    activity: activities.find(a => a.activityId === j.activityId) || {}
+  }));
+}
+
+function notifyTeacher_(teacher, student, activity) {
+  const msg =
+`มีผู้สมัครเข้าร่วมฐานการเรียนรู้
+
+ชื่อ: ${student.fullname}
+โทร: ${student.phone}
+กิจกรรม: ${activity.title}
+ฐานที่: ${activity.baseNo}
+วันที่: ${activity.activityDate}`;
+
+  // ส่งอีเมล แต่ไม่ให้ Error กระทบระบบยืนยัน
+  if (teacher.email) {
+    try {
+      MailApp.sendEmail({
+        to: teacher.email,
+        subject: "แจ้งสมัครเข้าร่วมกิจกรรมฐานการเรียนรู้",
+        body: msg
+      });
+    } catch (error) {
+      console.error(
+        "ส่งอีเมลไม่สำเร็จ: " + error.message
+      );
+    }
+  }
+
+  // ส่ง LINE
+  if (
+    LINE_CHANNEL_ACCESS_TOKEN &&
+    teacher.lineUserId
+  ) {
+    try {
+      const res = UrlFetchApp.fetch(
+        "https://api.line.me/v2/bot/message/push",
+        {
+          method: "post",
+          contentType: "application/json",
+          headers: {
+            Authorization:
+              "Bearer " + LINE_CHANNEL_ACCESS_TOKEN
+          },
+          payload: JSON.stringify({
+            to: String(teacher.lineUserId).trim(),
+            messages: [
+              {
+                type: "text",
+                text: msg
+              }
+            ]
+          }),
+          muteHttpExceptions: true
+        }
+      );
+
+      Logger.log(
+        "LINE STATUS: " +
+        res.getResponseCode()
+      );
+
+      Logger.log(
+        "LINE RESPONSE: " +
+        res.getContentText()
+      );
+    } catch (error) {
+      console.error(
+        "ส่ง LINE ไม่สำเร็จ: " + error.message
+      );
+    }
+  }
+}
+/* ---------- Teacher ---------- */
+
+function registerTeacher(data) {
+  const username = String(data.username || "").trim();
+  const password = String(data.password || "").trim();
+  const teacherName = String(data.teacherName || "").trim();
+  const teacherImage = String(data.teacherImage || "").trim();
+  const baseName = String(data.baseName || "").trim();
+  const email = String(data.email || "").trim();
+  const lineUserId = String(data.lineUserId || "").trim();
+
+  if (!username || !password || !teacherName || !baseName || !email) {
+    return { ok: false, message: "กรุณากรอกข้อมูลครูให้ครบ" };
+  }
+
+  const teachers = getData_(SHEETS.teachers);
+  if (teachers.some(t => t.username === username)) {
+    return { ok: false, message: "Username นี้มีอยู่แล้ว" };
+  }
+
+  const teacherId = uid_("TCH");
+
+  append_(SHEETS.teachers, [
+    teacherId, username, password, teacherName, teacherImage,
+    baseName, email, lineUserId, new Date()
+  ]);
+
+  return { ok: true, message: "ลงทะเบียนครูสำเร็จ" };
+}
+
+function teacherLogin(username, password) {
+  const teachers = getData_(SHEETS.teachers);
+  const teacher = teachers.find(t => t.username === username && t.password === password);
+
+  if (!teacher) return { ok: false, message: "Username หรือ Password ไม่ถูกต้อง" };
+
+  return { ok: true, teacher, message: "เข้าสู่ระบบครูสำเร็จ" };
+}
+
+function addActivity(data) {
+  if (!data.teacherId) return { ok: false, message: "กรุณาเข้าสู่ระบบครูก่อน" };
+
+append_(SHEETS.activities, [
+  uid_("ACT"),
+  data.teacherId,
+  data.baseNo || "",
+  data.hours || "",
+  data.title || "",
+  data.learningType || "",
+  data.detail || "",
+  data.image1 || "",
+  data.image2 || "",
+  data.image3 || "",
+  data.activityDate || "",
+  "เปิด",
+  new Date()
+]);
+
+  return { ok: true, message: "เพิ่มกิจกรรมสำเร็จ" };
+}
+
+function getTeacherDashboard(teacherId) {
+  const tid = String(teacherId || "").trim();
+
+  const activities = getData_(SHEETS.activities)
+    .filter(a => String(a.teacherId || "").trim() === tid)
+    .reverse();
+
+  const joins = getData_(SHEETS.joins);
+  const students = getData_(SHEETS.students);
+  const scores = getData_(SHEETS.score);
+
+  return activities.map(a => {
+    const actId = String(a.activityId || "").trim();
+
+    const applicants = joins
+      .filter(j => {
+        const sid = String(j.studentId || "").trim();
+        const aid = String(j.activityId || "").trim();
+
+        const alreadySaved = scores.some(s =>
+          String(s.studentId || "").trim() === sid &&
+          String(s.activityId || "").trim() === aid
+        );
+
+        return aid === actId && !alreadySaved;
+      })
+      .map(j => {
+        const sid = String(j.studentId || "").trim();
+        const student = students.find(s =>
+          String(s.studentId || "").trim() === sid
+        );
+
+        return {
+          ...j,
+          student: student || {}
+        };
+      });
+
+    return { ...a, applicants };
+  });
+}
+function studentLogin(phone) {
+  const tel = normalizePhone_(phone);
+
+  if (!tel) {
+    return { ok: false, message: "กรุณากรอกเบอร์โทร" };
+  }
+
+  const students = getData_(SHEETS.students);
+
+  const student = students.find(s =>
+    normalizePhone_(s.phone) === tel
+  );
+
+  if (!student) {
+    return {
+      ok: false,
+      message: "ไม่พบบัญชีนี้ กรุณาลงทะเบียนก่อน"
+    };
+  }
+
+  student.phone = tel;
+
+  return {
+    ok: true,
+    student,
+    message: "เข้าสู่ระบบสำเร็จ"
+  };
+}
+function cancelCart(cartId) {
+  const sh = ss_().getSheetByName(SHEETS.carts);
+  const values = sh.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] === cartId) {
+      sh.deleteRow(i + 1);
+      return { ok: true, message: "ยกเลิกรายการแล้ว" };
+    }
+  }
+
+  return { ok: false, message: "ไม่พบรายการในตะกร้า" };
+}
+function normalizePhone_(phone) {
+  let tel = String(phone || "").trim();
+  tel = tel.replace(/\D/g, "");
+
+  if (!tel) return "";
+
+  if (tel.length === 9) tel = "0" + tel;
+
+  return tel;
+}
+
+function testCreateFilePermission() {
+  const folder = DriveApp.getFolderById(ACTIVITY_IMAGE_FOLDER_ID);
+  const file = folder.createFile("test.txt", "test upload permission");
+  file.setTrashed(true);
+  Logger.log("สร้างไฟล์ทดสอบสำเร็จ");
+}
+function testDrivePermission() {
+  const folder = DriveApp.getFolderById(ACTIVITY_IMAGE_FOLDER_ID);
+  const file = folder.createFile("test.txt", "test");
+  file.setTrashed(true);
+  Logger.log("OK");
+}
+function testDriveApiUpload() {
+  const blob = Utilities.newBlob("test", "text/plain", "test.txt");
+
+  const file = Drive.Files.insert(
+    {
+      title: "test.txt",
+      parents: [{ id: ACTIVITY_IMAGE_FOLDER_ID }]
+    },
+    blob
+  );
+
+  Drive.Permissions.insert(
+    {
+      role: "reader",
+      type: "anyone"
+    },
+    file.id
+  );
+
+  Logger.log(file.id);
+}
+function getTeacherActivities(teacherId) {
+  const tid = String(teacherId || "").trim();
+  return getData_(SHEETS.activities)
+    .filter(a => String(a.teacherId || "").trim() === tid)
+    .reverse();
+}
+
+function updateActivity(data) {
+  const sh = ss_().getSheetByName(SHEETS.activities);
+  const values = sh.getDataRange().getValues();
+
+  const activityId = String(data.activityId || "").trim();
+  const teacherId = String(data.teacherId || "").trim();
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      String(values[i][0]).trim() === activityId &&
+      String(values[i][1]).trim() === teacherId
+    ) {
+      sh.getRange(i + 1, 3, 1, 9).setValues([[
+        data.baseNo || "",
+        data.hours || "",
+        data.title || "",
+        data.learningType || "",
+        data.detail || "",
+        data.image1 || "",
+        data.image2 || "",
+        data.image3 || "",
+        data.activityDate || ""
+      ]]);
+
+      return { ok: true, message: "แก้ไขกิจกรรมสำเร็จ" };
+    }
+  }
+
+  return { ok: false, message: "ไม่พบกิจกรรม หรือไม่มีสิทธิ์แก้ไข" };
+}
+
+function deleteActivity(activityId, teacherId) {
+  const sh = ss_().getSheetByName(SHEETS.activities);
+  const values = sh.getDataRange().getValues();
+
+  const aid = String(activityId || "").trim();
+  const tid = String(teacherId || "").trim();
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      String(values[i][0]).trim() === aid &&
+      String(values[i][1]).trim() === tid
+    ) {
+      sh.deleteRow(i + 1);
+      return { ok: true, message: "ลบกิจกรรมสำเร็จ" };
+    }
+  }
+
+  return { ok: false, message: "ไม่พบกิจกรรม หรือไม่มีสิทธิ์ลบ" };
+}
+function getBaseLearningList() {
+  const sh = ss_().getSheetByName("ฐานการเรียนรู้");
+
+  if (!sh) return [];
+
+  return sh.getRange("B2:B")
+    .getDisplayValues()
+    .flat()
+    .map(x => String(x).trim())
+    .filter(x => x);
+}
+function saveActualHours(data) {
+  const studentId = String(data.studentId || "").trim();
+  const activityId = String(data.activityId || "").trim();
+  const teacherId = String(data.teacherId || "").trim();
+  const actualHours = String(data.actualHours || "").trim();
+
+  if (!actualHours || isNaN(Number(actualHours))) {
+    return { ok: false, message: "กรุณากรอกชั่วโมงเป็นตัวเลข" };
+  }
+
+  const students = getData_(SHEETS.students);
+  const joins = getData_(SHEETS.joins);
+
+  const student = students.find(s =>
+    String(s.studentId || "").trim() === studentId
+  );
+
+  const join = joins.find(j =>
+    String(j.studentId || "").trim() === studentId &&
+    String(j.activityId || "").trim() === activityId
+  );
+
+  if (!student) return { ok: false, message: "ไม่พบข้อมูลผู้สมัคร" };
+
+  const sh = ss_().getSheetByName(SHEETS.score);
+  const values = sh.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      String(values[i][5]).trim() === studentId &&
+      String(values[i][6]).trim() === activityId
+    ) {
+      sh.getRange(i + 1, 1, 1, 9).setValues([[
+        student.fullname || "",
+        student.phone || "",
+        student.address || "",
+        join ? join.createdAt : "",
+        actualHours,
+        studentId,
+        activityId,
+        teacherId,
+        new Date()
+      ]]);
+
+      return { ok: true, message: "บันทึกชั่วโมงสำเร็จ" };
+    }
+  }
+
+  sh.appendRow([
+    student.fullname || "",
+    student.phone || "",
+    student.address || "",
+    join ? join.createdAt : "",
+    actualHours,
+    studentId,
+    activityId,
+    teacherId,
+    new Date()
+  ]);
+
+  return { ok: true, message: "บันทึกชั่วโมงสำเร็จ" };
+}
+
+function getStudentTotalHours(studentId) {
+  const sid = String(studentId || "").trim();
+  const scores = getData_(SHEETS.score);
+
+  return scores
+    .filter(s => String(s.studentId || "").trim() === sid)
+    .reduce((sum, s) => sum + Number(s.actualHours || 0), 0);
+}
+function getSavedScoresByTeacher(teacherId) {
+  const tid = String(teacherId || "").trim();
+  return getData_(SHEETS.score)
+    .filter(s => String(s.teacherId || "").trim() === tid)
+    .reverse();
+}
+
+function updateSavedScore(data) {
+  const sh = ss_().getSheetByName(SHEETS.score);
+  const values = sh.getDataRange().getValues();
+
+  const studentId = String(data.studentId || "").trim();
+  const activityId = String(data.activityId || "").trim();
+  const actualHours = String(data.actualHours || "").trim();
+
+  if (!actualHours || isNaN(Number(actualHours))) {
+    return { ok:false, message:"กรุณากรอกชั่วโมงเป็นตัวเลข" };
+  }
+
+  for (let i = 1; i < values.length; i++) {
+    if (
+      String(values[i][5]).trim() === studentId &&
+      String(values[i][6]).trim() === activityId
+    ) {
+      sh.getRange(i + 1, 5).setValue(actualHours);
+      sh.getRange(i + 1, 9).setValue(new Date());
+      return { ok:true, message:"แก้ไขชั่วโมงสำเร็จ" };
+    }
+  }
+
+  return { ok:false, message:"ไม่พบรายการ" };
+}
+function forgotTeacherPassword(email) {
+  const mail = String(email || "").trim().toLowerCase();
+
+  if (!mail) {
+    return { ok: false, message: "กรุณากรอกอีเมล" };
+  }
+
+  const teachers = getData_(SHEETS.teachers);
+
+  const teacher = teachers.find(t =>
+    String(t.email || "").trim().toLowerCase() === mail
+  );
+
+  if (!teacher) {
+    return {
+      ok: false,
+      message: "อีเมลนี้ไม่ได้ลงทะเบียนครู"
+    };
+  }
+
+  const body =
+`ข้อมูลเข้าสู่ระบบครูประจำฐาน
+
+ชื่อครู: ${teacher.teacherName || "-"}
+ฐาน: ${teacher.baseName || "-"}
+
+Username: ${teacher.username || "-"}
+Password: ${teacher.password || "-"}
+
+กรุณาเก็บข้อมูลนี้ไว้เป็นความลับ`;
+
+  MailApp.sendEmail({
+    to: teacher.email,
+    subject: "แจ้งข้อมูลเข้าสู่ระบบครูประจำฐาน",
+    body: body
+  });
+
+  return {
+    ok: true,
+    message: "ส่ง Username และ Password ไปที่อีเมลแล้ว"
+  };
+}
+function getMyScoreDetail(studentId) {
+  const sid = String(studentId || "").trim();
+
+  const scores = getData_(SHEETS.score)
+    .filter(s => String(s.studentId || "").trim() === sid);
+
+  const activities = getData_(SHEETS.activities);
+
+  const list = scores.map(s => {
+    const act = activities.find(a =>
+      String(a.activityId || "").trim() === String(s.activityId || "").trim()
+    ) || {};
+
+    return {
+      title: act.title || "-",
+      baseNo: act.baseNo || "-",
+      actualHours: Number(s.actualHours || 0),
+      savedAt: s.savedAt || ""
+    };
+  });
+
+  const total = list.reduce((sum, x) => sum + Number(x.actualHours || 0), 0);
+
+  return { list, total };
+}
+function getBooks_() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(BOOK_SHEET_NAME);
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต ' + BOOK_SHEET_NAME);
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  return sheet.getRange(2, 1, lastRow - 1, 5)
+    .getDisplayValues()
+    .filter(row => row.some(value => String(value).trim() !== ''))
+    .map(row => ({
+      bookId: String(row[0] || '').trim(),
+      category: String(row[1] || '').trim(),
+      title: String(row[2] || '').trim(),
+      image: normalizeBookImageUrl_(row[3]),
+      detail: String(row[4] || '').trim()
+    }));
+}
+
+function normalizeBookImageUrl_(url) {
+  return normalizePublicImageUrl_(url);
+}
+function getBusActivities_() {
+  const ss = SpreadsheetApp.openById(
+    WEBSITE_SPREADSHEET_ID
+  );
+
+  const sheet = ss.getSheetByName(
+    BUS_SHEET_NAME
+  );
+
+  if (!sheet) {
+    throw new Error(
+      'ไม่พบชีต ' + BUS_SHEET_NAME
+    );
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, 5)
+    .getDisplayValues();
+
+  return values
+    .filter(row =>
+      row.some(value =>
+        String(value || '').trim() !== ''
+      )
+    )
+    .map(row => ({
+      place: String(row[0] || '').trim(),
+      vehicle: String(row[1] || '').trim(),
+      date: String(row[2] || '').trim(),
+      time: String(row[3] || '').trim(),
+      detail: String(row[4] || '').trim()
+    }));
+}
+function getSetting() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sh = ss.getSheetByName("setting");
+
+  return {
+    hourText: String(sh.getRange("B2").getDisplayValue() || "ชั่วโมง").trim(),
+    headerImage: String(sh.getRange("B3").getDisplayValue() || "").trim()
+  };
+}
+
+
+function getBossData_() {
+  const ss = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(BOSS_SHEET_NAME);
+
+  if (!sheet) {
+    throw new Error(
+      'ไม่พบชีตชื่อ boss ใน Spreadsheet: ' +
+      WEBSITE_SPREADSHEET_ID
+    );
+  }
+
+  const image = String(
+    sheet.getRange('B2').getDisplayValue() || ''
+  ).trim();
+
+  const name = String(
+    sheet.getRange('B3').getDisplayValue() || ''
+  ).trim();
+
+  const position = String(
+    sheet.getRange('B4').getDisplayValue() || ''
+  ).trim();
+
+  return {
+    image: normalizePublicImageUrl_(image),
+    name: name,
+    position: position
+  };
+}
+function getBossData_() {
+  const sh = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID)
+    .getSheetByName('boss');
+
+  if (!sh) {
+    return {
+      image: '',
+      name: '',
+      position: '',
+      popupImage: '',
+      popupUrl: '',
+      popupMode: 'none'
+    };
+  }
+
+  return {
+    image: sh.getRange('D2').getDisplayValue().trim(),
+    name: sh.getRange('B2').getDisplayValue().trim(),
+    position: sh.getRange('C2').getDisplayValue().trim(),
+
+    popupImage: sh.getRange('G2').getDisplayValue().trim(),
+    popupUrl: sh.getRange('G3').getDisplayValue().trim(),
+    popupMode: (sh.getRange('H2').getDisplayValue() || 'none').trim().toLowerCase()
+  };
+}
+function getActivities() {
+  const activities = getData_(SHEETS.activities)
+    .filter(a => a.status !== "ปิด")
+    .reverse();
+
+  const teachers = getData_(SHEETS.teachers);
+
+  return activities.map(a => {
+    const t = teachers.find(
+      x => x.teacherId === a.teacherId
+    ) || {};
+
+    return {
+      ...a,
+      teacherName: t.teacherName || "",
+      teacherImage: t.teacherImage || "",
+      baseName: t.baseName || ""
+    };
+  });
+}
+function getTeamMembers_() {
+  const sheet = SpreadsheetApp
+    .openById(WEBSITE_SPREADSHEET_ID)
+    .getSheetByName('boss');
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต boss');
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, 4)
+    .getDisplayValues();
+
+  return values
+    .map(row => ({
+      order: String(row[0] || '').trim(),
+      name: String(row[1] || '').trim(),
+      position: String(row[2] || '').trim(),
+      image: String(row[3] || '').trim()
+    }))
+    .filter(item =>
+      item.name ||
+      item.position ||
+      item.image
+    )
+    .sort((a, b) => {
+      const orderA = Number(a.order) || 999999;
+      const orderB = Number(b.order) || 999999;
+
+      return orderA - orderB;
+    });
+}
+
+
+
+
+
+function normalizeLearningHeader_(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\-_\/()]+/g, '');
+}
+
+function findLearningSheet_(ss, names) {
+  const wanted = names.map(normalizeLearningHeader_);
+  return ss.getSheets().find(function(sheet) {
+    return wanted.indexOf(normalizeLearningHeader_(sheet.getName())) !== -1;
+  }) || null;
+}
+
+function sheetRowsAsObjects_(sheet) {
+  if (!sheet || sheet.getLastRow() < 2 || sheet.getLastColumn() < 1) return [];
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values[0].map(function(value) { return String(value || '').trim(); });
+  return values.slice(1)
+    .filter(function(row) { return row.some(function(value) { return String(value || '').trim() !== ''; }); })
+    .map(function(row) {
+      const item = {};
+      headers.forEach(function(header, index) {
+        item[header] = row[index];
+        item[normalizeLearningHeader_(header)] = row[index];
+      });
+      return item;
+    });
+}
+
+function pickLearningValue_(row, aliases, fallback) {
+  for (let i = 0; i < aliases.length; i++) {
+    const key = normalizeLearningHeader_(aliases[i]);
+    if (Object.prototype.hasOwnProperty.call(row, key)) {
+      const value = row[key];
+      if (String(value || '').trim() !== '') return value;
+    }
+  }
+  return fallback === undefined ? '' : fallback;
+}
+
+function normalizeLearningSource_(row, index) {
+  const value = function(aliases, fallback) {
+    return String(pickLearningValue_(row, aliases, fallback) || '').trim();
+  };
+
+  return {
+    id: value(['id','source_id','sourceid','รหัส','รหัสแหล่งเรียนรู้'], 'LR' + String(index + 1).padStart(4, '0')),
+    name: value(['name','source_name','sourcename','ชื่อ','ชื่อแหล่งเรียนรู้']),
+    category: value(['category','type','ประเภท','หมวด','ประเภทแหล่งเรียนรู้']),
+    manager: value(['manager','owner','ผู้ดูแล','เจ้าของ','ผู้ดูแลแหล่งเรียนรู้']),
+    phone: value(['phone','tel','telephone','โทรศัพท์','เบอร์โทร']),
+    address: value(['address','ที่ตั้ง','สถานที่ตั้ง','ที่อยู่']),
+    area: value(['area','responsibility_area','พื้นที่','พื้นที่รับผิดชอบ']),
+    description: value(['description','detail','รายละเอียด','คำอธิบาย']),
+    image_url: normalizePublicImageUrl_(value(['image_url','imageurl','image','รูป','รูปภาพ','urlรูปภาพ'])),
+    image2_url: normalizePublicImageUrl_(value(['image2_url','image2url','image2','รูป2','รูปภาพ2'])),
+    image3_url: normalizePublicImageUrl_(value(['image3_url','image3url','image3','รูป3','รูปภาพ3'])),
+    map_x: Number(value(['map_x','mapx','x','พิกัดx','ตำแหน่งx'], 50)) || 50,
+    map_y: Number(value(['map_y','mapy','y','พิกัดy','ตำแหน่งy'], 50)) || 50,
+    marker_color: value(['marker_color','markercolor','สีหมุด'], '#ef4444'),
+    marker_icon: value(['marker_icon','markericon','ไอคอนหมุด'], 'fa-location-dot'),
+    google_map_url: value(['google_map_url','googlemapurl','map_url','แผนที่google','urlgooglemap']),
+    status: value(['status','สถานะ'], 'block').toLowerCase(),
+    views: Number(value(['views','view','visit_count','จำนวนเข้าชม','ยอดเข้าชม'], 0)) || 0
+  };
+}
+
+function getLearningSettings_(ss) {
+  const sheet = findLearningSheet_(ss, ['settings','setting','ตั้งค่า','การตั้งค่า']);
+  if (!sheet || sheet.getLastRow() < 1) return {};
+
+  const values = sheet.getDataRange().getDisplayValues();
+  const settings = {};
+
+  // รูปแบบ key/value ในคอลัมน์ A:B
+  values.forEach(function(row, index) {
+    const key = normalizeLearningHeader_(row[0]);
+    const val = String(row[1] || '').trim();
+    if (key && val && index > 0) settings[key] = val;
+  });
+
+  // รูปแบบหัวตารางแถว 1 และข้อมูลแถว 2
+  if (values.length >= 2) {
+    values[0].forEach(function(header, index) {
+      const key = normalizeLearningHeader_(header);
+      const val = String(values[1][index] || '').trim();
+      if (key && val) settings[key] = val;
+    });
+  }
+
+  return {
+    system_name: settings.systemname || settings['ชื่อระบบ'] || settings.title || 'แหล่งเรียนรู้ในพื้นที่',
+    organization: settings.organization || settings['หน่วยงาน'] || '',
+    logo_url: normalizePublicImageUrl_(settings.logourl || settings.logo || settings['โลโก้'] || ''),
+    primary_color: settings.primarycolor || settings['สีหลัก'] || '#2563eb',
+    map_title: settings.maptitle || settings['ชื่อแผนที่'] || 'แผนที่แหล่งเรียนรู้',
+    map_image_url: normalizePublicImageUrl_(settings.mapimageurl || settings.mapimage || settings['urlรูปภาพแผนที่'] || settings['รูปภาพแผนที่'] || '')
+  };
+}
+
+function getLearningReviews_(ss) {
+  const sheet = findLearningSheet_(ss, ['reviews','review','ความคิดเห็น','รีวิว']);
+  return sheetRowsAsObjects_(sheet).map(function(row) {
+    return {
+      source_id: String(pickLearningValue_(row, ['source_id','sourceid','id','รหัสแหล่งเรียนรู้'], '') || '').trim(),
+      rating: Number(pickLearningValue_(row, ['rating','score','คะแนน'], 0)) || 0,
+      visitor_name: String(pickLearningValue_(row, ['visitor_name','visitorname','name','ชื่อผู้แสดงความคิดเห็น','ชื่อ'], '') || '').trim(),
+      comment: String(pickLearningValue_(row, ['comment','detail','ความคิดเห็น'], '') || '').trim(),
+      created_at: String(pickLearningValue_(row, ['created_at','createdat','date','วันที่'], '') || '').trim()
+    };
+  });
+}
+
+function getLearningTypes_(ss, sources) {
+  const sheet = findLearningSheet_(ss, ['types','type','ประเภท','หมวดหมู่']);
+  let types = [];
+  if (sheet && sheet.getLastRow() >= 2) {
+    types = sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(1, sheet.getLastColumn()))
+      .getDisplayValues()
+      .flat()
+      .map(function(v) { return String(v || '').trim(); })
+      .filter(Boolean);
+  }
+  if (!types.length) {
+    types = sources.map(function(s) { return s.category; }).filter(Boolean);
+  }
+  return Array.from(new Set(types));
+}
+
+
+// ============================================================================
+// รายงานสถิติใบงาน/แบบทดสอบ และ API Top 3 (รวมจากไฟล์ "ผู้นำ")
+// ============================================================================
+
+function doGetReport_(e) {
+  return HtmlService.createTemplateFromFile("report_page")
+    .evaluate()
+    .setTitle("Dashboard รายงานสถิติ")
+    .addMetaTag("viewport", "width=device-width, initial-scale=1")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function getAllDashboardData() {
+  return {
+    worksheet: getReportData_("classroom", "B9", 2, 3, "ใบงาน"),
+    quiz: getReportData_("quiz", "B8", 4, 5, "แบบทดสอบ")
+  };
+}
+
+function getReportData_(settingSheetName, urlCell, teacherCol, districtCol, reportName) {
+  try {
+    const mainSS = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+    const settingSh = mainSS.getSheetByName(settingSheetName);
+
+    const url = String(settingSh.getRange(urlCell).getDisplayValue()).trim();
+
+    if (!url) {
+      return {
+        ok: false,
+        message: "คุณยังไม่ระบุชีตรับคำตอบในห้องเรียนออนไลน์",
+        levels: {}
+      };
+    }
+
+    const ss = SpreadsheetApp.openByUrl(url);
+    const levels = ["ประถม", "ม.ต้น", "ม.ปลาย"];
+    const result = {};
+
+    levels.forEach(function(level) {
+      const sh = ss.getSheetByName(level);
+
+      if (!sh) {
+        result[level] = [];
+        return;
+      }
+
+      const lastRow = sh.getLastRow();
+
+      if (lastRow < 2) {
+        result[level] = [];
+        return;
+      }
+
+      const data = sh
+        .getRange(2, teacherCol, lastRow - 1, 2)
+        .getDisplayValues();
+
+      const map = {};
+
+      data.forEach(function(r) {
+        const teacher = String(r[0] || "").trim();
+        const district = String(r[1] || "").trim();
+
+        if (!teacher) return;
+
+        const key = teacher + "||" + district;
+
+        if (!map[key]) {
+          map[key] = {
+            teacher: teacher,
+            district: district,
+            count: 0
+          };
+        }
+
+        map[key].count++;
+      });
+
+      const total = Object.values(map).reduce(function(sum, x) {
+        return sum + x.count;
+      }, 0);
+
+      result[level] = Object.values(map)
+        .map(function(x) {
+          return {
+            teacher: x.teacher,
+            district: x.district,
+            count: x.count,
+            percent: total ? ((x.count / total) * 100).toFixed(2) : "0.00"
+          };
+        })
+        .sort(function(a, b) {
+          return Number(b.percent) - Number(a.percent);
+        });
+    });
+
+    return {
+      ok: true,
+      message: "",
+      levels: result
+    };
+
+  } catch (err) {
+    return {
+      ok: false,
+      message: reportName + " : " + err.message,
+      levels: {}
+    };
+  }
+}
+
+function exportAllExcel() {
+  try {
+    const tempSS = SpreadsheetApp.create("Export_รายงานสถิติรวม");
+
+    exportSetToFile_(tempSS, "classroom", "B9", "ใบงาน");
+    exportSetToFile_(tempSS, "quiz", "B8", "แบบทดสอบ");
+
+    const sheets = tempSS.getSheets();
+    if (sheets.length > 1 && sheets[0].getLastRow() === 0) {
+      tempSS.deleteSheet(sheets[0]);
+    }
+
+    SpreadsheetApp.flush();
+
+    const file = DriveApp.getFileById(tempSS.getId());
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    return {
+      ok: true,
+      url: "https://docs.google.com/spreadsheets/d/" + tempSS.getId() + "/export?format=xlsx",
+      name: "Export_รายงานสถิติรวม.xlsx"
+    };
+
+  } catch (err) {
+    return {
+      ok: false,
+      message: err.message
+    };
+  }
+}
+
+function exportSetToFile_(tempSS, settingSheetName, urlCell, prefix) {
+  const mainSS = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const settingSh = mainSS.getSheetByName(settingSheetName);
+  const url = String(settingSh.getRange(urlCell).getDisplayValue()).trim();
+
+  if (!url) return;
+
+  const sourceSS = SpreadsheetApp.openByUrl(url);
+  const levels = ["ประถม", "ม.ต้น", "ม.ปลาย"];
+
+  levels.forEach(function(level) {
+    const sourceSh = sourceSS.getSheetByName(level);
+    if (!sourceSh) return;
+
+    const lastRow = sourceSh.getLastRow();
+    const lastCol = sourceSh.getLastColumn();
+
+    if (lastRow < 1 || lastCol < 1) return;
+
+    const values = sourceSh.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+    const targetSh = tempSS.insertSheet(prefix + "_" + level);
+
+    targetSh.getRange(1, 1, values.length, values[0].length).setValues(values);
+
+    targetSh.getRange(1, 1, 1, values[0].length)
+      .setFontWeight("bold")
+      .setBackground("#2e7d1f")
+      .setFontColor("#ffffff");
+  });
+}
+function clearAllReportData(){
+
+  try{
+
+    clearSourceSheets_("classroom","B9");
+    clearSourceSheets_("quiz","B8");
+
+    return {
+      ok:true
+    };
+
+  }catch(err){
+
+    return {
+      ok:false,
+      message:err.message
+    };
+
+  }
+
+}
+function clearSourceSheets_(settingSheetName,urlCell){
+
+  const mainSS = SpreadsheetApp.openById(WEBSITE_SPREADSHEET_ID);
+  const settingSh = mainSS.getSheetByName(settingSheetName);
+
+  const url = String(
+    settingSh.getRange(urlCell).getDisplayValue()
+  ).trim();
+
+  if(!url) return;
+
+  const ss = SpreadsheetApp.openByUrl(url);
+
+  ["ประถม","ม.ต้น","ม.ปลาย"].forEach(function(name){
+
+    const sh = ss.getSheetByName(name);
+
+    if(!sh) return;
+
+    const lastRow = sh.getLastRow();
+    const lastCol = sh.getLastColumn();
+
+    if(lastRow <= 1) return;
+
+    sh.getRange(
+      2,
+      1,
+      lastRow - 1,
+      lastCol
+    ).clearContent();
+
+  });
+
+}
+/**
+ * ส่งอันดับ 1-3 ของรายงานใบงานและแบบทดสอบให้หน้า index.html
+ * ใช้ผลคำนวณเดียวกับหน้า Dashboard เพื่อให้อันดับตรงกัน
+ */
+function getStudentServiceTop3_() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'STUDENT_SERVICE_TOP3_V2';
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (ignore) {}
+  }
+
+  const dashboard = getAllDashboardData();
+  const levels = ["ประถม", "ม.ต้น", "ม.ปลาย"];
+  const result = {
+    success: true,
+    generatedAt: new Date().toISOString(),
+    worksheet: {},
+    quiz: {}
+  };
+
+  ["worksheet", "quiz"].forEach(function(type) {
+    const report = dashboard[type] || {};
+    if (!report.ok) {
+      result.success = false;
+      result[type] = { error: report.message || "โหลดข้อมูลไม่สำเร็จ" };
+      return;
+    }
+
+    levels.forEach(function(level) {
+      result[type][level] = (report.levels[level] || [])
+        .slice(0, 3)
+        .map(function(row, index) {
+          return {
+            rank: index + 1,
+            teacher: String(row.teacher || ""),
+            district: String(row.district || ""),
+            count: Number(row.count || 0),
+            percent: Number(row.percent || 0)
+          };
+        });
+    });
+  });
+
+  try { cache.put(cacheKey, JSON.stringify(result), 300); } catch (ignore) {}
+  return result;
+}
+
+
+// ============================================================================
+// ระบบแหล่งเรียนรู้ (รวมจากโปรเจกต์เดิม)
+// doGet ถูกเปลี่ยนชื่อเป็น doGetLearningSource_ และใช้ include กลางของไฟล์หลัก
+// ============================================================================
+
+const CONFIG = {
+  MASTER_SPREADSHEET_ID: '1JPpLWaO5Ci2tiWmImsE5ct9ec_VzrfbDNZEVDLR5mSA',
+
+  MASTER_SHEET_NAME: 'แหล่งเรียนรู้',
+  SPREADSHEET_ID_CELL: 'B2',
+
+  SHEETS: {
+    SETTINGS: 'settings',
+    SOURCES: 'learning_sources',
+    CATEGORIES: 'categories',
+    AREAS: 'areas',
+    VISITS: 'visits',
+    REVIEWS: 'reviews'
+  }
+};
+function getMasterSpreadsheet_() {
+  const masterId = String(
+    CONFIG.MASTER_SPREADSHEET_ID || ''
+  ).trim();
+
+  if (!masterId) {
+    throw new Error(
+      'ไม่ได้กำหนด CONFIG.MASTER_SPREADSHEET_ID'
+    );
+  }
+
+  return SpreadsheetApp.openById(masterId);
+}
+function getTargetSpreadsheetId_() {
+  const masterSS = getMasterSpreadsheet_();
+
+  const sheet = masterSS.getSheetByName(
+    CONFIG.MASTER_SHEET_NAME
+  );
+
+  if (!sheet) {
+    throw new Error(
+      'ไม่พบชีต "' + CONFIG.MASTER_SHEET_NAME + '"'
+    );
+  }
+
+  const spreadsheetId = String(
+    sheet.getRange(CONFIG.SPREADSHEET_ID_CELL)
+      .getDisplayValue() || ''
+  ).trim();
+
+  if (!spreadsheetId) {
+    throw new Error(
+      'ไม่พบ Spreadsheet ID ที่ ' +
+      CONFIG.MASTER_SHEET_NAME +
+      '!' +
+      CONFIG.SPREADSHEET_ID_CELL
+    );
+  }
+
+  return spreadsheetId;
+}
+function getLearningSheetOptions() {
+  const ss = getMasterSpreadsheet_();
+  const sheet = ss.getSheetByName('แหล่งเรียนรู้');
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต "แหล่งเรียนรู้"');
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getDisplayValues();
+
+  return values
+    .map(row => ({
+      name: String(row[0] || '').trim(),
+      spreadsheetId: String(row[1] || '').trim()
+    }))
+    .filter(item =>
+      item.name &&
+      item.spreadsheetId
+    );
+}
+function jsonpOrJsonOutput_(data, callback) {
+  const json = JSON.stringify(data);
+
+  if (callback) {
+    return ContentService
+      .createTextOutput(
+        callback + '(' + json + ');'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+function repairLearningSourcesHeader() {
+  const ss = getSpreadsheet_();
+
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.SOURCES);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.SOURCES);
+  }
+
+const headers = [
+  'id',
+  'name',
+  'image_url',
+  'image2_url',
+  'image3_url',
+  'manager',
+  'phone',
+  'address',
+  'area',
+  'category',
+  'description',
+  'learn_more_url',
+  'latitude',
+  'longitude',
+  'map_x',
+  'map_y',
+  'marker_color',
+  'marker_icon',
+  'status',
+  'created_at',
+  'updated_at'
+];
+
+  const currentHeaders = sheet
+    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1))
+    .getDisplayValues()[0];
+
+  const hasCorrectHeader =
+    currentHeaders[0] === 'id' &&
+    currentHeaders[1] === 'name';
+
+  // ถ้ามีข้อมูลแต่ไม่มีหัวตาราง ให้แทรกแถวบนสุด
+  if (!hasCorrectHeader && sheet.getLastRow() > 0) {
+    sheet.insertRowBefore(1);
+  }
+
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  sheet.setFrozenRows(1);
+
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#1e3a8a')
+    .setFontColor('#ffffff');
+
+  sheet.autoResizeColumns(1, headers.length);
+
+  return 'ซ่อมหัวตาราง learning_sources เรียบร้อยแล้ว';
+}
+function doGetLearningSource_(e) {
+  const mode = String(
+    e && e.parameter
+      ? e.parameter.mode || ''
+      : ''
+  ).trim().toLowerCase();
+
+if (mode === 'learningareaoptions') {
+
+  const callback = String(
+    e && e.parameter
+      ? e.parameter.callback || ''
+      : ''
+  )
+    .trim()
+    .replace(/[^\w.$]/g, '');
+
+  try {
+
+    const spreadsheetId = String(
+      e && e.parameter
+        ? e.parameter.spreadsheetId || ''
+        : ''
+    ).trim();
+
+    return jsonpOrJsonOutput_(
+      {
+        success: true,
+        areas: getAreaList(spreadsheetId)
+      },
+      callback
+    );
+
+  } catch (err) {
+
+    return jsonpOrJsonOutput_(
+      {
+        success: false,
+        areas: [],
+        message: err.message || String(err)
+      },
+      callback
+    );
+
+  }
+}
+if (mode === 'learningareas') {
+
+  const callback = String(
+    e && e.parameter
+      ? e.parameter.callback || ''
+      : ''
+  )
+    .trim()
+    .replace(/[^\w.$]/g, '');
+
+  try {
+
+    const data =
+  getLearningAreasCached_();
+
+    return jsonpOrJsonOutput_(
+      {
+        success: true,
+        areas: data
+      },
+      callback
+    );
+
+  } catch (err) {
+
+    return jsonpOrJsonOutput_(
+      {
+        success: false,
+        areas: [],
+        message: err.message || String(err)
+      },
+      callback
+    );
+
+  }
+}
+if (mode === 'learningsheetoptions') {
+
+  const callback = String(
+    e && e.parameter
+      ? e.parameter.callback || ''
+      : ''
+  )
+    .trim()
+    .replace(/[^\w.$]/g, '');
+
+  try {
+
+    return jsonpOrJsonOutput_(
+      {
+        success: true,
+        items: getLearningSheetOptions()
+      },
+      callback
+    );
+
+  } catch (error) {
+
+    return jsonpOrJsonOutput_(
+      {
+        success: false,
+        items: [],
+        message: error.message || String(error)
+      },
+      callback
+    );
+  }
+}
+if (mode === 'learningbox') {
+  let result;
+
+  try {
+
+    const spreadsheetId = String(
+      e && e.parameter
+        ? e.parameter.spreadsheetId || ''
+        : ''
+    ).trim();
+
+    result = getPublicData(spreadsheetId);
+
+  } catch (error) {
+
+    result = {
+      success: false,
+      message: error.message || String(error)
+    };
+  }
+
+  const json = JSON.stringify(result);
+
+  const callback = String(
+    e && e.parameter
+      ? e.parameter.callback || ''
+      : ''
+  )
+    .trim()
+    .replace(/[^\w.$]/g, '');
+
+  if (callback) {
+    return ContentService
+      .createTextOutput(
+        callback + '(' + json + ');'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+if (mode === 'learningdetail') {
+  try {
+    const sourceId = String(
+      e && e.parameter
+        ? e.parameter.sourceId || ''
+        : ''
+    ).trim();
+
+    const visitType = String(
+      e && e.parameter
+        ? e.parameter.visitType || 'detail'
+        : 'detail'
+    ).trim();
+
+    const sessionId = String(
+      e && e.parameter
+        ? e.parameter.sessionId || ''
+        : ''
+    ).trim();
+
+    const userAgent = String(
+      e && e.parameter
+        ? e.parameter.userAgent || ''
+        : ''
+    ).trim();
+
+    const spreadsheetId = String(
+      e && e.parameter
+        ? e.parameter.spreadsheetId || ''
+        : ''
+    ).trim();
+
+    const callback = String(
+      e && e.parameter
+        ? e.parameter.callback || ''
+        : ''
+    )
+      .trim()
+      .replace(/[^\w.$]/g, '');
+
+    const result = getSourceDetail(
+      sourceId,
+      visitType,
+      sessionId,
+      userAgent,
+      spreadsheetId
+    );
+
+    return jsonpOrJsonOutput_(
+      result,
+      callback
+    );
+
+  } catch (error) {
+
+    const callback = String(
+      e && e.parameter
+        ? e.parameter.callback || ''
+        : ''
+    )
+      .trim()
+      .replace(/[^\w.$]/g, '');
+
+    return jsonpOrJsonOutput_(
+      {
+        success: false,
+        message: error.message || String(error)
+      },
+      callback
+    );
+  }
+}
+if (mode === 'learningreview') {
+  const callback = String(
+    e && e.parameter
+      ? e.parameter.callback || ''
+      : ''
+  )
+    .trim()
+    .replace(/[^\w.$]/g, '');
+
+  try {
+    const p = e && e.parameter ? e.parameter : {};
+
+    const result = submitReview({
+      sourceId: p.sourceId || '',
+      rating: p.rating || '',
+      name: p.name || '',
+      comment: p.comment || '',
+      spreadsheetId: p.spreadsheetId || ''
+    });
+
+    return jsonpOrJsonOutput_(result, callback);
+  } catch (error) {
+    return jsonpOrJsonOutput_(
+      {
+        success: false,
+        message: error.message || String(error)
+      },
+      callback
+    );
+  }
+}
+  const page = String(
+    e && e.parameter
+      ? e.parameter.page || 'home'
+      : 'home'
+  ).toLowerCase();
+
+  const t = HtmlService.createTemplateFromFile(
+    page === 'admin'
+      ? 'Dashboard'
+      : 'Index'
+  );
+
+  t.appUrl = ScriptApp.getService().getUrl();
+
+  return t.evaluate()
+    .setTitle(
+      page === 'admin'
+        ? 'Dashboard แหล่งเรียนรู้'
+        : 'แหล่งเรียนรู้ในพื้นที่'
+    )
+    .addMetaTag(
+      'viewport',
+      'width=device-width, initial-scale=1'
+    )
+    .setXFrameOptionsMode(
+      HtmlService.XFrameOptionsMode.ALLOWALL
+    );
+}
+
+function setupSystem() {
+  const ss = getSpreadsheet_();
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.SETTINGS, [
+    ['key', 'value'],
+    ['system_name', 'แหล่งเรียนรู้ในพื้นที่'],
+    ['organization', 'ชื่อหน่วยงาน'],
+    ['logo_url', 'https://cdn-icons-png.flaticon.com/512/854/854878.png'],
+    ['map_image_url', 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1600&q=80'],
+    ['map_title', 'แผนที่แหล่งเรียนรู้'],
+    ['primary_color', '#2563eb']
+  ]);
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.CATEGORIES, [
+    ['id', 'name', 'color', 'icon', 'status'],
+    ['CAT001', 'เกษตรกรรม', '#16a34a', 'fa-seedling', 'block'],
+    ['CAT002', 'ศิลปวัฒนธรรม', '#f97316', 'fa-landmark', 'block'],
+    ['CAT003', 'อาชีพ', '#2563eb', 'fa-briefcase', 'block'],
+    ['CAT004', 'ห้องสมุด', '#8b5cf6', 'fa-book', 'block']
+  ]);
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.AREAS, [
+    ['id', 'name', 'status'],
+    ['AREA001', 'พื้นที่ตัวอย่าง 1', 'block'],
+    ['AREA002', 'พื้นที่ตัวอย่าง 2', 'block']
+  ]);
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.SOURCES, [
+    [
+'id', 'name', 'image_url', 'gallery_urls', 'manager', 'phone',
+'address', 'area', 'category', 'description', 'learn_more_url',
+'latitude', 'longitude', 'map_x', 'map_y', 'marker_color',
+'marker_icon', 'status', 'created_at', 'updated_at'
+    ],
+    [
+      'LR0001',
+      'ศูนย์เรียนรู้เศรษฐกิจพอเพียง',
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+      '',
+      'นายตัวอย่าง ใจดี',
+      '0812345678',
+      'หมู่ 1 ตำบลตัวอย่าง อำเภอตัวอย่าง',
+      'พื้นที่ตัวอย่าง 1',
+      'เกษตรกรรม',
+'แหล่งเรียนรู้ด้านเกษตรผสมผสานและการดำเนินชีวิตตามหลักปรัชญาของเศรษฐกิจพอเพียง',
+'',
+'14.000000',
+'100.000000',
+      '35',
+      '48',
+      '#16a34a',
+      'fa-location-dot',
+      'block',
+      new Date(),
+      new Date()
+    ],
+    [
+      'LR0002',
+      'บ้านหนังสือชุมชน',
+      'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
+      '',
+      'นางสาวตัวอย่าง รักการอ่าน',
+      '0899999999',
+      'หมู่ 2 ตำบลตัวอย่าง อำเภอตัวอย่าง',
+      'พื้นที่ตัวอย่าง 2',
+      'ห้องสมุด',
+'พื้นที่ส่งเสริมการอ่าน การเรียนรู้ตลอดชีวิต และกิจกรรมชุมชน',
+'',
+'14.010000',
+'100.020000',
+      '68',
+      '30',
+      '#8b5cf6',
+      'fa-book-open',
+      'block',
+      new Date(),
+      new Date()
+    ]
+  ]);
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.VISITS, [
+    ['visit_id', 'datetime', 'source_id', 'source_name', 'visit_type', 'session_id', 'device', 'user_agent', 'date_key', 'month_key']
+  ]);
+
+  createSheetIfMissing_(ss, CONFIG.SHEETS.REVIEWS, [
+    ['review_id', 'datetime', 'source_id', 'source_name', 'visitor_name', 'rating', 'comment', 'status']
+  ]);
+
+  formatSheets_(ss);
+  return { success: true, message: 'สร้างโครงสร้าง Google Sheets เรียบร้อยแล้ว' };
+}
+
+function getPublicData(spreadsheetId) {
+  spreadsheetId = String(spreadsheetId || getTargetSpreadsheetId_()).trim();
+
+  if (!spreadsheetId) {
+    throw new Error('ไม่พบ Spreadsheet ID');
+  }
+
+  const settings = getSettings_(spreadsheetId);
+  const typeColorMap = getTypeColorMap_(spreadsheetId);
+  const types = getTypeList(spreadsheetId);
+
+  const sources = getSheetObjects_(
+    CONFIG.SHEETS.SOURCES,
+    spreadsheetId
+  )
+    .filter(row =>
+      String(row.status || '')
+        .trim()
+        .toLowerCase() === 'block'
+    )
+    .map(source =>
+      enrichSource_(source, spreadsheetId)
+    )
+    .map(source => {
+      const category =
+        String(source.category || '').trim();
+
+      return {
+        ...source,
+        marker_color:
+          typeColorMap[category] || '#FF3300'
+      };
+    });
+
+  return {
+    success: true,
+    settings,
+    sources,
+    types,
+    areas: getAreaList(spreadsheetId)
+  };
+}
+function getSourceDetail(
+  sourceId,
+  visitType,
+  sessionId,
+  userAgent,
+  spreadsheetId
+) {
+  const source = getSheetObjects_(
+    CONFIG.SHEETS.SOURCES,
+    spreadsheetId
+  )
+    .find(r => String(r.id) === String(sourceId));
+
+  if (!source) {
+    throw new Error('ไม่พบข้อมูลแหล่งเรียนรู้');
+  }
+
+  if (visitType) {
+    recordVisit_(
+      source,
+      visitType,
+      sessionId || '',
+      userAgent || '',
+      spreadsheetId
+    );
+  }
+
+  return {
+    success: true,
+    source: enrichSource_(source, spreadsheetId)
+  };
+}
+function submitReview(payload) {
+  payload = payload || {};
+  const sourceId = cleanText_(payload.sourceId, 50);
+  const rating = Number(payload.rating);
+  const spreadsheetId = String(
+    payload.spreadsheetId || getTargetSpreadsheetId_() || ''
+  ).trim();
+
+  if (!sourceId) throw new Error('ไม่พบรหัสแหล่งเรียนรู้');
+  if (!rating || rating < 1 || rating > 5) throw new Error('กรุณาให้คะแนน 1-5 ดาว');
+  if (!spreadsheetId) throw new Error('ไม่พบ Spreadsheet ID ของพื้นที่');
+
+  const source = getSheetObjects_(
+    CONFIG.SHEETS.SOURCES,
+    spreadsheetId
+  )
+    .find(r => String(r.id) === sourceId);
+  if (!source) throw new Error('ไม่พบข้อมูลแหล่งเรียนรู้');
+
+  const lock = LockService.getScriptLock();
+
+  if (!lock.tryLock(10000)) {
+    throw new Error('ระบบกำลังบันทึกข้อมูล กรุณาลองอีกครั้ง');
+  }
+
+  try {
+    const sheet = getSheet_(CONFIG.SHEETS.REVIEWS, spreadsheetId);
+
+    sheet.appendRow([
+      'RV' + Utilities.getUuid().replace(/-/g, '').slice(0, 12).toUpperCase(),
+      new Date(),
+      source.id,
+      source.name,
+      cleanText_(payload.name, 100),
+      rating,
+      cleanText_(payload.comment, 1000),
+      'approved'
+    ]);
+
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+
+  return { success: true, message: 'บันทึกความคิดเห็นเรียบร้อยแล้ว' };
+}
+
+function getAdminDashboard(pin) {
+
+  const adminSpreadsheetId = CONFIG.MASTER_SPREADSHEET_ID;
+  const sources = getSheetObjects_(CONFIG.SHEETS.SOURCES, adminSpreadsheetId)
+    .map(source => enrichSource_(source, adminSpreadsheetId));
+  const visits = getSheetObjects_(CONFIG.SHEETS.VISITS, adminSpreadsheetId);
+  const reviews = getSheetObjects_(CONFIG.SHEETS.REVIEWS, adminSpreadsheetId);
+
+  const todayKey = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const monthKey = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+
+  const categoryCounts = {};
+  const sourceVisitCounts = {};
+  const dailyCounts = {};
+
+  sources.forEach(s => categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1);
+  visits.forEach(v => {
+    sourceVisitCounts[v.source_id] = (sourceVisitCounts[v.source_id] || 0) + 1;
+    dailyCounts[v.date_key] = (dailyCounts[v.date_key] || 0) + 1;
+  });
+
+  const popular = sources
+    .map(s => ({ id: s.id, name: s.name, views: sourceVisitCounts[s.id] || 0 }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5);
+
+  return {
+    success: true,
+    settings: getSettings_(adminSpreadsheetId),
+    summary: {
+      totalSources: sources.length,
+      totalVisits: visits.length,
+      todayVisits: visits.filter(v => String(v.date_key) === todayKey).length,
+      monthVisits: visits.filter(v => String(v.month_key) === monthKey).length,
+      totalReviews: reviews.length,
+      averageRating: average_(reviews.map(r => Number(r.rating)).filter(Boolean))
+    },
+    sources,
+    reviews: reviews.slice(-50).reverse(),
+    categoryCounts,
+    popular,
+    dailyCounts
+  };
+}
+
+function saveSource(pin, payload) {
+  payload = payload || {};
+
+  const sheet = getSheet_(CONFIG.SHEETS.SOURCES, CONFIG.MASTER_SPREADSHEET_ID);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(String);
+  const idIndex = headers.indexOf('id');
+
+  let id = cleanText_(payload.id, 50);
+  if (!id) id = createNextSourceId_(data.slice(1).map(r => String(r[idIndex] || '')));
+
+const values = {
+  id,
+
+  name: cleanText_(payload.name, 200),
+
+  image_url:
+    cleanText_(payload.image_url, 1000),
+
+  image2_url:
+    cleanText_(payload.image2_url, 1000),
+
+  image3_url:
+    cleanText_(payload.image3_url, 1000),
+
+  manager: cleanText_(payload.manager, 200),
+  phone: cleanText_(payload.phone, 50),
+  address: cleanText_(payload.address, 500),
+  area: cleanText_(payload.area, 200),
+  category: cleanText_(payload.category, 200),
+
+  description:
+    cleanText_(payload.description, 3000),
+
+  learn_more_url:
+    cleanText_(payload.learn_more_url, 2000),
+
+  latitude: cleanText_(payload.latitude, 50),
+  longitude: cleanText_(payload.longitude, 50),
+
+  map_x: clamp_(Number(payload.map_x), 0, 100),
+  map_y: clamp_(Number(payload.map_y), 0, 100),
+
+  marker_icon:
+    cleanText_(payload.marker_icon, 100) ||
+    'fa-location-dot',
+
+  status:
+    String(payload.status || 'block') === 'none'
+      ? 'none'
+      : 'block',
+
+  updated_at: new Date()
+};
+
+  if (!values.name) throw new Error('กรุณาระบุชื่อแหล่งเรียนรู้');
+
+  const rowIndex = data.findIndex((r, index) => index > 0 && String(r[idIndex]) === id);
+
+  if (rowIndex > 0) {
+    headers.forEach((h, col) => {
+      if (Object.prototype.hasOwnProperty.call(values, h)) {
+        sheet.getRange(rowIndex + 1, col + 1).setValue(values[h]);
+      }
+    });
+  } else {
+    values.created_at = new Date();
+    sheet.appendRow(headers.map(h => Object.prototype.hasOwnProperty.call(values, h) ? values[h] : ''));
+  }
+
+  return { success: true, id, message: 'บันทึกข้อมูลเรียบร้อยแล้ว' };
+}
+
+function deleteSource(pin, sourceId) {
+  const sheet = getSheet_(CONFIG.SHEETS.SOURCES, CONFIG.MASTER_SPREADSHEET_ID);
+  const data = sheet.getDataRange().getValues();
+  const idCol = data[0].map(String).indexOf('id');
+
+  const rowIndex = data.findIndex((r, i) => i > 0 && String(r[idCol]) === String(sourceId));
+  if (rowIndex < 1) throw new Error('ไม่พบรายการที่ต้องการลบ');
+
+  sheet.deleteRow(rowIndex + 1);
+  return { success: true, message: 'ลบข้อมูลเรียบร้อยแล้ว' };
+}
+
+function saveSettings(pin, payload) {
+  payload = payload || {};
+
+  const allowed = ['system_name', 'organization', 'logo_url', 'map_image_url', 'map_title', 'primary_color'];
+  const sheet = getSheet_(CONFIG.SHEETS.SETTINGS, CONFIG.MASTER_SPREADSHEET_ID);
+  const data = sheet.getDataRange().getValues();
+
+  allowed.forEach(key => {
+    if (!Object.prototype.hasOwnProperty.call(payload, key)) return;
+    const rowIndex = data.findIndex((r, i) => i > 0 && String(r[0]) === key);
+    const value = cleanText_(payload[key], 2000);
+
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex + 1, 2).setValue(value);
+    } else {
+      sheet.appendRow([key, value]);
+    }
+  });
+
+  return { success: true, message: 'บันทึกการตั้งค่าเรียบร้อยแล้ว' };
+}
+
+function updateReviewStatus(pin, reviewId, status) {
+
+  const allowed = ['approved', 'hidden', 'deleted'];
+  if (!allowed.includes(status)) throw new Error('สถานะไม่ถูกต้อง');
+
+  const sheet = getSheet_(CONFIG.SHEETS.REVIEWS, CONFIG.MASTER_SPREADSHEET_ID);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(String);
+  const idCol = headers.indexOf('review_id');
+  const statusCol = headers.indexOf('status');
+
+  const rowIndex = data.findIndex((r, i) => i > 0 && String(r[idCol]) === String(reviewId));
+  if (rowIndex < 1) throw new Error('ไม่พบความคิดเห็น');
+
+  if (status === 'deleted') {
+    sheet.deleteRow(rowIndex + 1);
+  } else {
+    sheet.getRange(rowIndex + 1, statusCol + 1).setValue(status);
+  }
+
+  return { success: true };
+}
+
+function recordVisit_(
+  source,
+  visitType,
+  sessionId,
+  userAgent,
+  spreadsheetId
+) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(5000);
+
+  try {
+    const cache = CacheService.getScriptCache();
+
+    const dedupeKey = [
+      'visit',
+      spreadsheetId,
+      source.id,
+      visitType,
+      sessionId
+    ].join(':');
+
+    if (sessionId && cache.get(dedupeKey)) return;
+
+    const now = new Date();
+
+    getSheet_(
+      CONFIG.SHEETS.VISITS,
+      spreadsheetId
+    ).appendRow([
+      'VS' +
+        Utilities.getUuid()
+          .replace(/-/g, '')
+          .slice(0, 12)
+          .toUpperCase(),
+      now,
+      source.id,
+      source.name,
+      cleanText_(visitType, 30),
+      cleanText_(sessionId, 100),
+      detectDevice_(userAgent),
+      cleanText_(userAgent, 500),
+      Utilities.formatDate(
+        now,
+        Session.getScriptTimeZone(),
+        'yyyy-MM-dd'
+      ),
+      Utilities.formatDate(
+        now,
+        Session.getScriptTimeZone(),
+        'yyyy-MM'
+      )
+    ]);
+
+    if (sessionId) {
+      cache.put(dedupeKey, '1', 1800);
+    }
+
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (e) {}
+  }
+}
+
+function enrichSource_(
+  source,
+  spreadsheetId
+) {
+
+  const visits = getSheetObjects_(
+    CONFIG.SHEETS.VISITS,
+    spreadsheetId
+  )
+    .filter(v =>
+      String(v.source_id) ===
+      String(source.id)
+    );
+
+  const reviews = getSheetObjects_(
+    CONFIG.SHEETS.REVIEWS,
+    spreadsheetId
+  )
+    .filter(r =>
+      String(r.source_id) ===
+        String(source.id) &&
+      String(r.status) === 'approved'
+    );
+
+  return Object.assign({}, source, {
+    views: visits.length,
+
+    averageRating: average_(
+      reviews
+        .map(r => Number(r.rating))
+        .filter(Boolean)
+    ),
+
+    reviewCount: reviews.length,
+    reviews: reviews.slice(-10).reverse()
+  });
+}
+
+function getSettings_(spreadsheetId) {
+  const rows = getSheetObjects_(
+    CONFIG.SHEETS.SETTINGS,
+    spreadsheetId
+  );
+
+  const obj = {};
+
+  rows.forEach(r => {
+    obj[String(r.key)] = r.value;
+  });
+
+  return obj;
+}
+
+function getSpreadsheet_(spreadsheetId) {
+  spreadsheetId = String(spreadsheetId || getTargetSpreadsheetId_()).trim();
+
+  if (!spreadsheetId) {
+    throw new Error('ไม่พบ Spreadsheet ID ที่เลือก');
+  }
+
+  return SpreadsheetApp.openById(spreadsheetId);
+}
+
+function getSheet_(name, spreadsheetId) {
+  const sheet = getSpreadsheet_(spreadsheetId)
+    .getSheetByName(name);
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต ' + name);
+  }
+
+  return sheet;
+}
+
+function getSheetObjects_(name, spreadsheetId) {
+  const values = getSheet_(name, spreadsheetId)
+    .getDataRange()
+    .getDisplayValues();
+
+  if (values.length < 2) return [];
+
+  const headers = values[0].map(String);
+
+  return values
+    .slice(1)
+    .filter(row =>
+      row.some(v => String(v).trim() !== '')
+    )
+    .map(row =>
+      headers.reduce((obj, h, i) => {
+        obj[h] = row[i];
+        return obj;
+      }, {})
+    );
+}
+
+function createSheetIfMissing_(ss, name, rows) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  if (sheet.getLastRow() === 0 && rows && rows.length) {
+    sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+  }
+  return sheet;
+}
+
+function formatSheets_(ss) {
+  Object.values(CONFIG.SHEETS).forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet || sheet.getLastRow() === 0) return;
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, sheet.getLastColumn())
+      .setFontWeight('bold')
+      .setBackground('#1e3a8a')
+      .setFontColor('#ffffff');
+    sheet.autoResizeColumns(1, sheet.getLastColumn());
+  });
+}
+
+function createNextSourceId_(ids) {
+  const max = ids.reduce((m, id) => {
+    const n = Number(String(id).replace(/\D/g, '')) || 0;
+    return Math.max(m, n);
+  }, 0);
+  return 'LR' + String(max + 1).padStart(4, '0');
+}
+
+function cleanText_(value, maxLength) {
+  return String(value == null ? '' : value).trim().slice(0, maxLength || 1000);
+}
+
+function clamp_(value, min, max) {
+  if (!Number.isFinite(value)) return 50;
+  return Math.min(max, Math.max(min, value));
+}
+
+function average_(numbers) {
+  if (!numbers.length) return 0;
+  return Math.round((numbers.reduce((a, b) => a + b, 0) / numbers.length) * 10) / 10;
+}
+
+function detectDevice_(ua) {
+  ua = String(ua || '').toLowerCase();
+  if (/ipad|tablet/.test(ua)) return 'Tablet';
+  if (/mobile|android|iphone/.test(ua)) return 'Mobile';
+  return 'Desktop';
+}
+function repairReviewsSheet() {
+  const ss = getSpreadsheet_();
+
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.REVIEWS);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.REVIEWS);
+  }
+
+  const headers = [
+    'review_id',
+    'datetime',
+    'source_id',
+    'source_name',
+    'visitor_name',
+    'rating',
+    'comment',
+    'status'
+  ];
+
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setValues([headers]);
+
+  // ล้างหัวตารางส่วนเกิน I:J โดยไม่ลบข้อมูลแถวอื่น
+  if (sheet.getMaxColumns() >= 10) {
+    sheet.getRange(1, 9, 1, 2).clearContent();
+  }
+
+  sheet.setFrozenRows(1);
+
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#1e3a8a')
+    .setFontColor('#ffffff');
+
+  sheet.autoResizeColumns(1, headers.length);
+
+  return 'ซ่อมชีต reviews เรียบร้อยแล้ว';
+}
+
+function repairVisitsSheet() {
+  const ss = getSpreadsheet_();
+
+  let sheet = ss.getSheetByName(
+    CONFIG.SHEETS.VISITS
+  );
+
+  if (!sheet) {
+    sheet = ss.insertSheet(
+      CONFIG.SHEETS.VISITS
+    );
+  }
+
+  const headers = [
+    'visit_id',
+    'datetime',
+    'source_id',
+    'source_name',
+    'visit_type',
+    'session_id',
+    'device',
+    'user_agent',
+    'date_key',
+    'month_key'
+  ];
+
+  /*
+   * ตรวจสอบว่าชีตมีข้อมูลเดิมหรือไม่
+   * ถ้ามีข้อมูลแต่แถวแรกไม่ใช่หัวตาราง
+   * ให้แทรกแถวใหม่ด้านบน
+   */
+  const lastRow = sheet.getLastRow();
+  const firstCell = lastRow > 0
+    ? String(sheet.getRange(1, 1).getDisplayValue()).trim()
+    : '';
+
+  if (
+    lastRow > 0 &&
+    firstCell !== 'visit_id'
+  ) {
+    sheet.insertRowBefore(1);
+  }
+
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setValues([headers]);
+
+  sheet.setFrozenRows(1);
+
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#1e3a8a')
+    .setFontColor('#ffffff');
+
+  sheet.autoResizeColumns(
+    1,
+    headers.length
+  );
+
+  return {
+    success: true,
+    message: 'ตรวจสอบและซ่อมชีต visits เรียบร้อยแล้ว'
+  };
+}
+function getTypeList(spreadsheetId) {
+  const ss =
+    getSpreadsheet_(spreadsheetId);
+
+  const sheet =
+    ss.getSheetByName('type');
+
+  if (!sheet) {
+    throw new Error('ไม่พบชีต type');
+  }
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 1) return [];
+
+  return sheet
+    .getRange(1, 1, lastRow, 1)
+    .getDisplayValues()
+    .flat()
+    .map(value =>
+      String(value).trim()
+    )
+    .filter(Boolean);
+}
+function getTypeColorMap_(spreadsheetId) {
+  const ss =
+    getSpreadsheet_(spreadsheetId);
+
+  const sheet =
+    ss.getSheetByName('type');
+
+  if (!sheet || sheet.getLastRow() < 1) {
+    return {};
+  }
+
+  const values = sheet
+    .getRange(
+      1,
+      1,
+      sheet.getLastRow(),
+      2
+    )
+    .getDisplayValues();
+
+  const colorMap = {};
+
+  values.forEach(row => {
+    const category =
+      String(row[0] || '').trim();
+
+    const color =
+      String(row[1] || '').trim();
+
+    if (category) {
+      colorMap[category] =
+        color || '#FF3300';
+    }
+  });
+
+  return colorMap;
+}
+
+function isValidHexColor_(color) {
+  return /^#[0-9A-Fa-f]{6}$/.test(String(color || '').trim());
+}
+
+function getOfficeList() {
+  const sheet = getSpreadsheet_().getSheetByName('office');
+  if (!sheet) return [];
+
+  return sheet
+    .getRange(1, 1, sheet.getLastRow(), 1)
+    .getDisplayValues()
+    .flat()
+    .map(v => String(v).trim())
+    .filter(Boolean);
+}
+function getAreaList(spreadsheetId) {
+  const sheet = getSheet_(
+    CONFIG.SHEETS.SOURCES,
+    spreadsheetId
+  );
+
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+  const values = sheet
+    .getRange(2, 9, lastRow - 1, 1)
+    .getDisplayValues()
+    .flat()
+    .map(value =>
+      String(value || '').trim()
+    )
+    .filter(Boolean);
+
+  return [...new Set(values)]
+    .sort((a, b) =>
+      a.localeCompare(b, 'th')
+    );
+}
+
+function getLearningAreas_() {
+
+  const masterSS = getMasterSpreadsheet_();
+
+  const masterSheet =
+    masterSS.getSheetByName(
+      CONFIG.MASTER_SHEET_NAME
+    );
+
+  if (!masterSheet) {
+    throw new Error(
+      'ไม่พบชีต "' +
+      CONFIG.MASTER_SHEET_NAME +
+      '"'
+    );
+  }
+
+
+  const lastRow =
+    masterSheet.getLastRow();
+
+  if (lastRow < 2) {
+    return [];
+  }
+
+
+  /*
+   * Master Sheet
+   * A = ชื่อตำบล
+   * B = Spreadsheet ID
+   * C = รูปแผนที่ (ข้อมูลอ้างอิง)
+   * D = จำนวนแหล่งเรียนรู้ (ข้อมูลอ้างอิง)
+   * E = rating
+   */
+  const rows =
+    masterSheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        5
+      )
+      .getDisplayValues();
+
+
+  const result = [];
+
+
+  rows.forEach(row => {
+
+    const areaName =
+      String(row[0] || '').trim();
+
+    const spreadsheetId =
+      String(row[1] || '').trim();
+
+    const rating =
+      Number(String(row[4] || '0').replace(/,/g, '').trim()) || 0;
+
+
+    if (!spreadsheetId) {
+      return;
+    }
+
+
+    try {
+
+      const ss =
+        SpreadsheetApp.openById(
+          spreadsheetId
+        );
+
+
+   /* ============================
+   รูปแผนที่
+   settings!B5
+============================ */
+
+let mapImage = '';
+
+const settingsSheet =
+  ss.getSheetByName('settings');
+
+if (settingsSheet) {
+
+  mapImage =
+    String(
+      settingsSheet
+        .getRange('B5')
+        .getDisplayValue() || ''
+    ).trim();
+
+}
+
+
+      /* ============================
+         จำนวนแหล่งเรียนรู้
+         learning_sources!A2:A
+      ============================ */
+
+      let sourceCount = 0;
+
+      const sourceSheet =
+        ss.getSheetByName(
+          'learning_sources'
+        );
+
+      if (sourceSheet) {
+
+        const sourceLastRow =
+          sourceSheet.getLastRow();
+
+        if (sourceLastRow >= 2) {
+
+          const ids =
+            sourceSheet
+              .getRange(
+                2,
+                1,
+                sourceLastRow - 1,
+                1
+              )
+              .getDisplayValues();
+
+
+          sourceCount =
+            ids.reduce(
+              (count, row) => {
+
+                return (
+                  String(row[0] || '').trim()
+                    ? count + 1
+                    : count
+                );
+
+              },
+              0
+            );
+
+        }
+
+      }
+
+
+      result.push({
+
+        name:
+          areaName || 'ไม่ระบุชื่อ',
+
+        spreadsheetId:
+          spreadsheetId,
+
+        mapImage:
+          mapImage,
+
+        sourceCount:
+          sourceCount,
+
+        rating:
+          rating
+
+      });
+
+
+    } catch (err) {
+
+      console.error(
+        'โหลดข้อมูลไม่สำเร็จ:',
+        areaName,
+        spreadsheetId,
+        err
+      );
+
+    }
+
+  });
+
+
+  return result.sort(function(a, b) {
+    return Number(b.rating || 0) - Number(a.rating || 0);
+  });
+}
+function getLearningAreasCached_() {
+
+  const cache =
+    CacheService.getScriptCache();
+
+  const cacheKey =
+    'learningAreas_v3_rating';
+
+
+  const cached =
+    cache.get(cacheKey);
+
+
+  if (cached) {
+
+    try {
+
+      return JSON.parse(
+        cached
+      );
+
+    } catch (e) {}
+
+  }
+
+
+  const data =
+    getLearningAreas_();
+
+
+  cache.put(
+    cacheKey,
+    JSON.stringify(data),
+    300
+  );
+
+
+  return data;
+}

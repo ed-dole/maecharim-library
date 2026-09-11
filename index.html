@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="เว็บไซต์ร้านหนังสือสไตล์ภาพประกอบ พร้อมใช้งานบน GitHub Pages" />
+  <title>สกร.ระดับอำเภอบ่อเกลือ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <script>
+    // Cold load: เริ่ม homefast เร็วตั้งแต่ <head>.
+    // Repeat load: ถ้ามี cache อายุไม่เกิน 15 นาที ไม่ยิง Apps Script ซ้ำ เพื่อให้เน็ตว่างสำหรับ CSS/รูปภาพ.
+    (function () {
+      var cacheKey = 'SITE_FAST:homefast-v8-performance';
+      var maxAge = 15 * 60 * 1000;
+      var admin = false;
+      try { admin = Boolean(sessionStorage.getItem('mysiteAdminToken')); } catch (_) {}
+      function hasUsable(storage) {
+        if (!storage) return false;
+        try {
+          var saved = JSON.parse(storage.getItem(cacheKey) || 'null');
+          return Boolean(saved && saved.savedAt && (Date.now() - saved.savedAt <= maxAge));
+        } catch (_) { return false; }
+      }
+      if (!admin && (hasUsable(window.sessionStorage) || hasUsable(window.localStorage))) return;
+      window.__SITE_HOMEFAST_PREFETCH = fetch(
+        window.APP_CONFIG.API_URL + '?mode=homefast',
+        { method: 'GET', cache: 'default', credentials: 'omit' }
+      ).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).catch(function () { return null; });
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+  #websiteHeroOverlay {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  #websiteHeroOverlay.website-hero-ready {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.25s ease;
+  }
+
+    /* ลดงาน layout/paint ของส่วนล่างที่ยังไม่อยู่ในจอ */
+    #featured, #learningSourceBox, #bestPracticeBox, #FBpostBox, #cliproomBox, #learningBaseModule, #buttonsection {
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 620px;
+    }
+</style>
+  <link rel="stylesheet" href="index-fast-core.css?v=20260904-marker-right-1">
+  <style>
+    #learningBaseModule.shopactivity-preview{padding:52px 0;background:linear-gradient(145deg,#f4f7fb,#fff 55%,#eff5ff)}
+    #learningBaseModule .shopactivity-arrow{width:40px;height:40px;padding:0;border-radius:50%;background:#fff;color:#2563eb;font-size:28px}
+    #learningBaseModule .shopactivity-dot{width:9px;height:9px;padding:0;border-radius:20px;background:#cbd5e1}
+    #learningBaseModule .shopactivity-dot.active{width:27px;background:#2563eb}
+    @media(max-width:620px){#learningBaseModule.shopactivity-preview{padding:38px 0}#learningBaseModule .shopactivity-arrow{top:auto;bottom:0;width:36px;height:36px;padding:0}}
+  </style>
+  <link rel="stylesheet" href="index-fast-profile.css?v=20260902-fast-1">
+  <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+  media="print" onload="this.media='all'">
+  <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-buttons-2">
+  <link rel="stylesheet" href="book-featured.css?v=20260903-1">
+  <link rel="stylesheet" href="button-section.css?v=20260904-library-buttonsection-1">
+</head>
+<body class="website-data-loading theme-v2">
+  <div id="adminLoginModal" class="admin-login-modal" hidden>
+    <form id="adminLoginForm" class="admin-login-card" autocomplete="on">
+      <button id="adminLoginClose" class="admin-login-close" type="button" aria-label="ปิด">&times;</button>
+      <div class="admin-login-icon"><i class="fa-solid fa-lock" aria-hidden="true"></i></div>
+      <h1>เข้าสู่ระบบจัดการเว็บไซต์</h1>
+      <p>กรอก Username และ Password เพื่อแสดงเครื่องมือแก้ไข</p>
+      <label for="adminUsername">Username</label>
+      <input id="adminUsername" name="username" type="text" autocomplete="username" required>
+      <label for="adminPassword">Password</label>
+      <div class="admin-password-wrap">
+        <input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
+        <button id="adminTogglePassword" type="button" aria-label="แสดงหรือซ่อนรหัสผ่าน"><i class="fa-solid fa-eye"></i></button>
+      </div>
+      <button id="adminLoginSubmit" class="admin-login-submit" type="submit">เข้าสู่ระบบ</button>
+      <button id="adminForgotButton" class="admin-forgot" type="button">ลืมรหัสผ่าน?</button>
+      <div id="adminLoginStatus" class="admin-login-status" role="status"></div>
+    </form>
+  </div>
+
+  <div class="admin-mode-banner admin-only" role="status" aria-label="สถานะผู้ดูแลระบบ">
+    <div class="admin-storage-meter" id="adminStorageMeter" aria-label="พื้นที่จัดเก็บไฟล์ของผู้ดูแล">
+      <div class="admin-storage-labels">
+        <span id="adminStorageUsed">กำลังตรวจสอบพื้นที่...</span>
+        <span id="adminStorageLimit">100 GB</span>
+      </div>
+      <div
+        class="admin-storage-track"
+        id="adminStorageTrack"
+        role="progressbar"
+        aria-label="พื้นที่จัดเก็บที่ใช้แล้ว"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <span class="admin-storage-fill" id="adminStorageFill"></span>
+      </div>
+    </div>
+    <div class="admin-mode-label">Mode : ผู้ดูแลระบบ</div>
+  </div>
+
+  <div class="announcement">
+    <div class="container announcement-inner">
+      <a class="brand brand-light" href="#home" aria-label="Book Store home">
+        <span class="brand-icon" data-website-brand-icon></span>
+        <span data-website-brand-name>.</span>
+      </a>
+      <p id="announcementText" hidden></p>
+      <div class="announcement-admin-actions" aria-label="การเข้าสู่ระบบผู้ดูแล">
+        <button id="adminLoginButton" class="admin-access-button" type="button">
+          <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+          <span>ผู้ดูแลระบบ</span>
+        </button>
+        <button id="adminLogoutButton" class="admin-access-button admin-logout-button" type="button" hidden>
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+          <span>ออกจากโหมดแก้ไข</span>
+        </button>
+      </div>
+      <div id="announcementSocials" class="announcement-socials" hidden aria-label="ช่องทางสื่อสังคมออนไลน์">
+        <a id="announcementLine" class="announcement-social announcement-line" target="_blank" rel="noopener noreferrer" aria-label="Line" hidden>
+          <i class="fa-brands fa-line" aria-hidden="true"></i>
+        </a>
+        <a id="announcementFacebook" class="announcement-social announcement-facebook" target="_blank" rel="noopener noreferrer" aria-label="Facebook" hidden>
+          <i class="fa-brands fa-facebook-f" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+
+    <a class="brand" href="#home" aria-label="หน้าหลัก">
+      <span class="brand-icon" data-website-brand-icon></span>
+    </a>
+
+    <nav class="main-nav" aria-label="เมนูหลัก">
+      <div class="main-nav-dropdown">
+        <button class="main-nav-dropdown-toggle" type="button" aria-expanded="false">
+          รู้จักเรา <span aria-hidden="true">▾</span>
+        </button>
+        <div class="main-nav-dropdown-menu" role="menu">
+          <a href="vision.html" role="menuitem">วิสัยทัศน์ อัตลักษณ์ พันธกิจ</a>
+          <a href="contact.html" role="menuitem">ติดต่อ/สอบถาม</a>
+        </div>
+      </div>
+
+      <div class="main-nav-dropdown">
+        <button class="main-nav-dropdown-toggle" type="button" aria-expanded="false">
+          ผลงานของเรา <span aria-hidden="true">▾</span>
+        </button>
+        <div class="main-nav-dropdown-menu" role="menu">
+          <a href="best_practice.html" role="menuitem">Best Practice</a>
+          <a href="innovation.html" role="menuitem">สื่อ/นวัตกรรม</a>
+          <a href="media.html" role="menuitem">คลังสื่อการสอน</a>
+          <a href="reward.html" role="menuitem">รางวัล เกียรติบัตร</a>
+          <a href="course.html" role="menuitem">คลังหลักสูตร</a>
+        </div>
+      </div>
+
+      <a href="#learningSourceBox">แหล่งเรียนรู้</a>
+      <a href="#cliproomBox">หลักสูตรออนไลน์</a>
+      <a href="#learningBaseModule">ช้อปกิจกรรม</a>
+
+      <div class="main-nav-dropdown">
+        <button class="main-nav-dropdown-toggle" type="button" aria-expanded="false">
+          สกร.ระดับตำบล <span aria-hidden="true">▾</span>
+        </button>
+        <div id="districtMenuList" class="main-nav-dropdown-menu" role="menu">
+          <span class="main-nav-dropdown-status">กำลังโหลด...</span>
+        </div>
+      </div>
+
+      <div class="main-nav-dropdown">
+        <button class="main-nav-dropdown-toggle" type="button" aria-expanded="false">
+          ห้องสมุด <span aria-hidden="true">▾</span>
+        </button>
+        <div id="libraryMenuList" class="main-nav-dropdown-menu" role="menu">
+          <span class="main-nav-dropdown-status">กำลังโหลด...</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="nav-profile-actions" aria-label="ข้อมูลสมาชิก">
+      <button
+        id="profileCartBtn"
+        class="profile-cart-btn"
+        type="button"
+        aria-label="เปิดตะกร้ากิจกรรม">
+        <span class="cart-icon">🛒</span>
+        <span id="profileCartCount">0</span> รายการ
+      </button>
+
+      <div
+        id="mobileProfilePoint"
+        class="mobile-profile-point"
+        role="button"
+        tabindex="0"
+        aria-label="ดูรายการกิจกรรม">
+        <strong id="mobileProfileHours">0</strong>
+        <span id="mobileProfileHoursLabel">Point</span>
+      </div>
+
+      <img
+        id="mobileProfilePhoto"
+        class="mobile-profile-photo"
+        src="https://static.wixstatic.com/media/a503e5_9064df4bf13044dab24382c889fa7d87~mv2.png"
+        alt="บัญชีผู้ใช้"
+        role="button"
+        tabindex="0"
+        aria-label="เปิดบัญชีผู้ใช้">
+
+    </div>
+
+  </div>
+</header>
+
+  <main>
+    <section id="home" class="hero">
+      <div id="websiteHeroOverlay" class="hero-overlay"></div>
+      <div id="editwebsite" class="editwebsite admin-only" aria-label="แก้ไขหน้าเว็บไซต์">
+        <button class="editwebsite-btn" type="button" data-editwebsite="text"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>แก้ไขข้อความ</button>
+        <button class="editwebsite-btn" type="button" data-editwebsite="image"><i class="fa-solid fa-image" aria-hidden="true"></i>แก้ไขโลโก้ ชื่อ รูปหัวเว็บไซต์</button>
+      </div>
+      <div class="container hero-content">
+        <div id="heroKickerText" class="eyebrow" hidden></div>
+        <h1 id="heroTitleText" hidden></h1>
+        <p id="heroDescriptionText" hidden></p>
+
+      </div>
+      <div class="floating-dot dot-1"></div>
+      <div class="floating-dot dot-2"></div>
+      <div class="floating-dot dot-3"></div>
+    </section>
+
+<!-- รถโมบาย + ข่าวสาร: แสดงแนวเดียวกัน -->
+<section id="news" class="news-section">
+  <div class="container">
+    <div id="homeSection" class="home-summary-section" aria-label="สรุปข้อมูลผู้ใช้งาน">
+      <div class="home-summary-grid">
+        <article class="home-summary-card home-summary-card-user">
+          <div class="home-summary-icon home-summary-icon-user" aria-hidden="true">👨‍🎓</div>
+          <div class="home-summary-title">นักศึกษา USER ทั้งหมด</div>
+          <div class="home-summary-number" id="userTotalBox">0</div>
+          <div class="home-summary-levels">
+            <div>ประถม <span id="userPrimaryBox">0</span></div>
+            <div>ม.ต้น <span id="userMiddleBox">0</span></div>
+            <div>ม.ปลาย <span id="userHighBox">0</span></div>
+          </div>
+        </article>
+
+        <article class="home-summary-card home-summary-card-admin">
+          <div class="home-summary-icon home-summary-icon-admin" aria-hidden="true">🧑‍🏫</div>
+          <div class="home-summary-title">นักศึกษา ADMIN ทั้งหมด</div>
+          <div class="home-summary-number" id="adminTotalBox">0</div>
+          <div class="home-summary-levels">
+            <div>ประถม <span id="adminPrimaryBox">0</span></div>
+            <div>ม.ต้น <span id="adminMiddleBox">0</span></div>
+            <div>ม.ปลาย <span id="adminHighBox">0</span></div>
+          </div>
+        </article>
+
+        <article class="home-summary-card home-summary-card-registration">
+          <div class="home-summary-icon home-summary-icon-registration" aria-hidden="true">🔐</div>
+          <div class="home-summary-title">จำนวนการลงทะเบียน<br>เพื่อเข้าใช้งาน</div>
+          <div class="home-summary-number" id="registrationCountBox">0</div>
+        </article>
+
+        <article class="home-summary-card home-summary-card-login">
+          <div class="home-summary-icon home-summary-icon-login" aria-hidden="true">👥</div>
+          <div class="home-summary-title">จำนวนการเข้าใช้งาน</div>
+          <div class="home-summary-number" id="loginCountBox">0</div>
+          <div class="home-summary-levels home-summary-login-levels">
+            <div>Admin <span id="adminLoginCountBox">0</span></div>
+            <div>User <span id="userLoginCountBox">0</span></div>
+          </div>
+        </article>
+
+        <article class="home-summary-card home-summary-card-website">
+          <div class="home-summary-icon home-summary-icon-website" aria-hidden="true">🌐</div>
+          <div class="home-summary-title">จำนวนการเข้าเว็บไซต์</div>
+          <div class="home-summary-number" id="websiteVisitCountBox">0</div>
+        </article>
+      </div>
+    </div>
+
+    <div id="newsBusLayout" class="news-bus-layout bus-is-hidden">
+      <div class="news-column">
+        <div class="section-heading">
+   
+        </div>
+
+        <div id="newsSlider" class="news-slider">
+          <button id="manageNewsButton" class="editwebsite-btn news-manager-trigger admin-only" type="button"><i class="fa-solid fa-newspaper" aria-hidden="true"></i>จัดการข่าวสาร</button>
+          <div id="newsSlides" class="news-slides">
+            <div class="news-loading">กำลังโหลดข่าวสาร...</div>
+          </div>
+          <button id="newsPrev" class="news-arrow news-prev" type="button" aria-label="ข่าวก่อนหน้า">‹</button>
+          <button id="newsNext" class="news-arrow news-next" type="button" aria-label="ข่าวถัดไป">›</button>
+          <div id="newsDots" class="news-dots"></div>
+        </div>
+
+        <!-- ข้อมูลใต้ข่าวสาร: 2 แถว -->
+        <div class="news-info-row admin-news-info-row">
+          <!-- แถว 1: บุคลากรจากชีต boss แสดง 1 แถวและเลื่อนได้เมื่อรายการล้น -->
+          <aside id="bossBox" class="boss-box boss-carousel" aria-label="บุคลากร" aria-live="polite">
+            <div class="boss-box-toolbar">
+              <button class="admin-manage-data-button admin-only" type="button" data-admin-page="team">
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                จัดการข้อมูล
+              </button>
+            </div>
+            <div class="boss-carousel-shell">
+              <button id="bossPrev" class="boss-carousel-arrow boss-carousel-prev" type="button" aria-label="บุคลากรก่อนหน้า" hidden>‹</button>
+              <div id="bossViewport" class="boss-carousel-viewport">
+                <div id="bossTrack" class="boss-carousel-track">
+                  <div class="boss-carousel-status">กำลังโหลดข้อมูลบุคลากร...</div>
+                </div>
+              </div>
+              <button id="bossNext" class="boss-carousel-arrow boss-carousel-next" type="button" aria-label="บุคลากรถัดไป" hidden>›</button>
+            </div>
+          </aside>
+
+          <!-- แถว 2: เมนูผลงานเรียงแนวนอน -->
+          <section id="studentBox" class="student-box menu-shortcuts" aria-label="เมนูลัด">
+            <div id="settingMenuGrid" class="setting-menu-grid" aria-live="polite">
+              <div class="setting-menu-loading">กำลังโหลดเมนู...</div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- หนังสือที่น่าอ่าน: อยู่ Box ถัดลงมาจากข่าวสาร -->
+<section id="featured" class="featured-section recommended-books-section" data-admin-section="1">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">หนังสือที่น่าอ่าน</span>
+        <h2>หนังสือที่น่าสนใจ</h2>
+      </div>
+      <button id="manageFeaturedBooksButton" class="editwebsite-btn book-manager-trigger admin-only" type="button"><i class="fa-solid fa-book-open" aria-hidden="true"></i> จัดการหนังสือน่าอ่าน</button>
+    </div>
+
+    <div class="book-showcase">
+      <button id="bookPrev" class="book-slider-arrow book-slider-prev" type="button" aria-label="หนังสือก่อนหน้า">‹</button>
+      <div id="bookSlides" class="book-slider-stage">
+        <div class="book-loading">กำลังโหลดหนังสือ...</div>
+      </div>
+      <button id="bookNext" class="book-slider-arrow book-slider-next" type="button" aria-label="หนังสือถัดไป">›</button>
+      <div id="bookDots" class="book-slider-dots"></div>
+    </div>
+
+<!-- ปุ่มเปิด/ปิดหนังสือทั้งหมด -->
+<div class="book-toggle-wrap">
+<button id="toggleBookListBtn"
+        class="book-list-toggle"
+        type="button"
+        aria-expanded="false">
+
+    <span class="book-toggle-icon">
+        <i class="fa fa-eye-slash"></i>
+    </span>
+
+    <span class="book-toggle-text">
+        หนังสือทั้งหมด
+    </span>
+
+</button>
+</div>
+
+    <div id="allBooksPanel" class="all-books-panel" hidden>
+      <div id="allBooksGrid" class="all-books-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- แหล่งเรียนรู้ในพื้นที่: Box แยก ไม่กระทบระบบเดิม -->
+<section id="learningSourceBox" class="lsb-section" data-admin-section="2">
+  <div class="container">
+
+    <div class="section-heading learning-source-heading">
+      <div>
+        <div class="activity-box-kicker">
+          ★ แหล่งเรียนรู้ในพื้นที่
+        </div>
+
+        <h2>แหล่งเรียนรู้ผ่านแผนที่</h2>
+      </div>
+
+      <a class="editwebsite-btn learning-admin-button admin-only" href="addlearning.html" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>จัดการแหล่งเรียนรู้</a>
+
+      <a id="lsbOpenAll"
+         class="lsb-open-all"
+         href="learning.html" target="_blank">
+        ดูรายการทั้งหมด
+      </a>
+    </div>
+
+    <div class="lsb-rating-note">
+      วางเมาส์ที่หมุดเพื่อดูข้อมูลแหล่งเรียนรู้ และเลื่อนดูภาพรายการด้านล่าง
+      <span aria-hidden="true">★</span>
+    </div>
+
+    <div class="lsb-box">
+      <div id="lsbAreaGrid" class="lsb-area-grid">
+        <div class="lsb-loading">
+          กำลังโหลดแหล่งเรียนรู้...
+        </div>
+      </div>
+
+      <div id="lsbShowAllWrap" class="lsb-show-all-wrap" hidden>
+        <button id="lsbShowAllBtn" class="lsb-show-all-btn" type="button">
+          แสดงแหล่งเรียนรู้ทั้งหมด
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ห้องเรียนออนไลน์: ใช้ระบบ Login เดียวกับ accountBtn -->
+
+<!-- Best Practice Box: ข้อมูลจากชีต best_practice -->
+<section id="bestPracticeBox" class="best-practice-box-section" data-admin-section="3">
+  <div class="best-practice-box-container">
+    <div class="best-practice-box-heading">
+      <div>
+        <div class="activity-box-kicker">★ BEST PRACTICE</div>
+        <h2>แนวปฏิบัติที่เป็นเลิศ</h2>
+      </div>
+
+      <div class="best-practice-box-heading-actions">
+        <a class="best-practice-box-admin-btn admin-only" href="best_practice.html">
+          <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+          จัดการ Best Practice
+        </a>
+
+        <a class="best-practice-box-more-btn" href="best_practice.html">
+          ดู Best Practice ทั้งหมด
+        </a>
+      </div>
+    </div>
+
+    <div id="bestPracticeBoxStatus" class="best-practice-box-status">
+      กำลังโหลด Best Practice...
+    </div>
+
+    <div id="bestPracticeBoxSlider" class="best-practice-box-slider" hidden>
+      <button id="bestPracticeBoxPrev" class="best-practice-box-arrow best-practice-box-prev" type="button" aria-label="Best Practice ก่อนหน้า">‹</button>
+      <div id="bestPracticeBoxViewport" class="best-practice-box-viewport">
+        <div id="bestPracticeBoxTrack" class="best-practice-box-track"></div>
+      </div>
+      <button id="bestPracticeBoxNext" class="best-practice-box-arrow best-practice-box-next" type="button" aria-label="Best Practice ถัดไป">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- FBpostBox: โพสต์ Facebook จากชีต facebook ของทุก Spreadsheet ตำบล -->
+<section id="FBpostBox" class="fbpost-box-section" aria-labelledby="fbpostBoxTitle" data-admin-section="4">
+  <div class="fbpost-box-container">
+    <div class="fbpost-box-heading fbpost-admin-heading">
+      <div>
+        <div class="activity-box-kicker">★ FACEBOOK</div>
+        <h2 id="fbpostBoxTitle">โพสต์จากพื้นที่</h2>
+      </div>
+
+      <button id="manageFacebookButton" class="editwebsite-btn facebook-manager-trigger admin-only" type="button"><i class="fa-brands fa-facebook" aria-hidden="true"></i>เพิ่มโพสต์ Facebook</button>
+
+      <a class="fbpost-box-more-btn" href="fbpost.html">
+        ดูโพสต์ทั้งหมด
+      </a>
+    </div>
+
+    <div id="fbpostBoxStatus" class="fbpost-box-status">
+      กำลังโหลดโพสต์ Facebook...
+    </div>
+
+    <div id="fbpostBoxGrid" class="fbpost-box-grid"></div>
+  </div>
+</section>
+
+<section id="cliproomBox" class="cliproom-section" aria-labelledby="cliproomTitle" data-admin-section="5">
+  <div class="container">
+    <div class="cliproom-admin-actions admin-only" aria-label="จัดการหลักสูตรอบรมออนไลน์">
+      <a class="cliproom-admin-course-button" href="admincliproom.html" target="_blank" rel="noopener noreferrer">
+        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+        <span>เพิ่ม/แก้ไขหลักสูตร</span>
+      </a>
+    </div>
+    <div class="cliproom-heading">
+      <div>
+        <div class="activity-box-kicker">★ CLIPROOM</div>
+        <div class="cliproom-title-row">
+          <div class="cliproom-title-copy">
+            <h2 id="cliproomTitle">หลักสูตรอบรมออนไลน์</h2>
+            <p>เรียนรู้ผ่านวิดีโอ ทำแบบทดสอบ และรับเกียรติบัตรออนไลน์</p>
+          </div>
+          <img
+            class="cliproom-certificate-image"
+            src="https://static.wixstatic.com/media/a503e5_2215286aaadd48a5922a7813c980a3af~mv2.png"
+            alt="รับเกียรติบัตรออนไลน์"
+            loading="lazy">
+        </div>
+      </div>
+      <a class="cliproom-open-all" href="cliproom.html" target="_blank" rel="noopener">ดูหลักสูตรทั้งหมด</a>
+    </div>
+    <div class="cliproom-slider">
+      <button id="cliproomPrev" class="cliproom-arrow cliproom-prev" type="button" aria-label="หลักสูตรก่อนหน้า">‹</button>
+      <div class="cliproom-viewport"><div id="cliproomTrack" class="cliproom-track"><div class="cliproom-loading"><span class="cliproom-spinner"></span>กำลังโหลดหลักสูตร...</div></div></div>
+      <button id="cliproomNext" class="cliproom-arrow cliproom-next" type="button" aria-label="หลักสูตรถัดไป">›</button>
+      <div id="cliproomDots" class="cliproom-dots" aria-label="หน้ารายการหลักสูตร"></div>
+    </div>
+  </div>
+</section>
+
+<section id="learningBaseModule" class="shopactivity-preview" aria-labelledby="shopActivityTitle" data-admin-section="6">
+  <div class="container">
+    <div class="shopactivity-admin-actions admin-only" aria-label="จัดการกิจกรรม">
+      <a class="shopactivity-admin-edit-button" href="addactivity.html" target="_blank" rel="noopener noreferrer">
+        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+        <span>เพิ่ม/แก้ไขกิจกรรม</span>
+      </a>
+    </div>
+    <div class="shopactivity-preview-heading">
+      <div>
+        <div class="activity-box-kicker">★ ฐานการเรียนรู้</div>
+        <div class="shopactivity-title-row">
+          <div class="shopactivity-title-copy">
+            <h2 id="shopActivityTitle">ช้อปกิจกรรม</h2>
+            <p>เลือกกิจกรรมที่สนใจ สะสม Point และยืนยันการเข้าร่วมได้ในหน้ากิจกรรม</p>
+          </div>
+          <img
+            class="shopactivity-title-image"
+            src="https://static.wixstatic.com/media/a503e5_4950e79a08734dba9bac49c414baeed8~mv2.png"
+            alt="Certificate"
+            loading="lazy">
+        </div>
+      </div>
+      <a class="shopactivity-open-all" href="shopactivity.html" target="_blank" rel="noopener">ดูกิจกรรมทั้งหมด</a>
+    </div>
+    <div class="shopactivity-slider">
+      <button id="shopActivityPrev" class="shopactivity-arrow shopactivity-prev" type="button" aria-label="กิจกรรมก่อนหน้า">‹</button>
+      <div class="shopactivity-viewport">
+        <div id="shopActivityTrack" class="shopactivity-track">
+          <div class="shopactivity-loading"><span class="shopactivity-spinner"></span>กำลังโหลดกิจกรรม...</div>
+        </div>
+      </div>
+      <button id="shopActivityNext" class="shopactivity-arrow shopactivity-next" type="button" aria-label="กิจกรรมถัดไป">›</button>
+      <div id="shopActivityDots" class="shopactivity-dots"></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="buttonsection" class="button-section" aria-label="ปุ่มทางลัด">
+  <div class="container">
+    <div class="button-section-admin-actions admin-only">
+      <button id="manageButtonSectionButton" class="button-section-manage" type="button">
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        <span>จัดการปุ่ม</span>
+      </button>
+    </div>
+    <div id="buttonSectionGrid" class="button-section-grid">
+      <div class="button-section-loading">กำลังโหลดรายการปุ่ม...</div>
+    </div>
+  </div>
+</section>
+
+  </main>
+
+  <!-- Popup รายละเอียดหนังสือ -->
+  <div id="bookDetailModal" class="book-detail-modal" aria-hidden="true">
+    <div class="book-detail-box" role="dialog" aria-modal="true" aria-labelledby="bookDetailTitle">
+      <button id="bookDetailClose" class="book-detail-close" type="button" aria-label="ปิด">×</button>
+      <div id="bookDetailContent"></div>
+    </div>
+  </div>
+
+  <footer id="contact" class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a class="brand brand-light" href="#home"><span class="brand-icon" data-website-brand-icon>B</span><span data-website-brand-name>.</span></a>
+        <p id="footerOrganization" class="footer-organization" hidden></p>
+        <p id="footerDescription" hidden></p>
+      </div>
+      <div>
+        <h4>ติดต่อเรา</h4>
+        <p id="footerAddress" hidden></p>
+        <p id="footerPhone" hidden></p>
+      </div>
+      <div>
+        <h4>ค้นหาในเว็บไซต์</h4>
+        <form id="siteSearchForm" class="subscribe-form" role="search">
+          <input id="siteSearchInput" type="search" placeholder="ค้นหาเนื้อหา" aria-label="ค้นหาเนื้อหาในเว็บไซต์" required>
+          <button type="submit">ค้นหา</button>
+        </form>
+      </div>
+    </div>
+    <div class="copyright">© 2026 Mintana. All rights reserved.</div>
+  </footer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+  
+  
+
+<!-- Student Modal -->
+<div id="studentModal" class="learning-modal">
+  <div class="learning-modal-box">
+
+    <button
+      class="btn-red learning-modal-close"
+      type="button"
+      aria-label="ปิด"
+      onclick="LearningBase.closeModal('studentModal')">
+      ×
+    </button>
+
+    <!-- ส่วน Login -->
+    <div id="loginSection">
+      <h2>👤 Login</h2>
+
+      <label for="loginPhone">เบอร์โทร</label>
+      <input
+        id="loginPhone"
+        maxlength="10"
+        inputmode="numeric">
+
+      <div class="learning-login-actions">
+        <button
+          type="button"
+          onclick="LearningBase.studentLogin()">
+          Login
+        </button>
+
+        <button
+          id="newRegisterBtn"
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.showRegisterBox()">
+          ลงทะเบียนผู้ใช้ใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- ส่วนลงทะเบียน -->
+    <div id="registerBox" style="display:none">
+      <h2>👤 ลงทะเบียนสมาชิก</h2>
+
+      <label for="stuFullname">
+        ชื่อ-นามสกุล
+      </label>
+
+      <input
+        id="stuFullname"
+        autocomplete="name">
+
+      <label for="stuPhone">
+        เบอร์โทร
+      </label>
+
+      <input
+        id="stuPhone"
+        maxlength="10"
+        inputmode="numeric"
+        autocomplete="tel">
+
+      <label for="stuAddress">
+        ที่อยู่
+      </label>
+
+      <textarea
+        id="stuAddress"
+        autocomplete="street-address">
+      </textarea>
+
+      <label for="stuPhoto">
+        แนบรูปภาพ
+      </label>
+
+      <input
+        id="stuPhoto"
+        class="learning-file-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif">
+
+      <div class="learning-photo-help">
+        รองรับ JPG, PNG, WEBP หรือ GIF
+        ขนาดไม่เกิน 5 MB
+      </div>
+
+      <div
+        id="stuPhotoPreviewWrap"
+        class="learning-photo-preview-wrap"
+        hidden>
+
+        <img
+          id="stuPhotoPreview"
+          class="learning-photo-preview"
+          alt="ตัวอย่างรูปที่แนบ">
+
+        <button
+          type="button"
+          class="learning-photo-remove"
+          onclick="LearningBase.clearStudentPhoto()">
+          ลบรูป
+        </button>
+      </div>
+
+      <div class="learning-register-actions">
+        <button
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.registerStudent()">
+          ลงทะเบียน
+        </button>
+      </div>
+    </div>
+
+    <!-- ส่วนหลังเข้าสู่ระบบ -->
+    <div
+      id="logoutBox"
+      style="margin-top:15px;display:none">
+
+      <div
+        style="
+          display:flex;
+          gap:8px;
+          flex-wrap:wrap;
+        ">
+
+        <button
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.showRegisterBox()">
+          ลงทะเบียน
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- =====================================================
+     Popup แก้ไขโปรไฟล์
+     แยกจาก Popup ลงทะเบียนเดิมทั้งหมด
+====================================================== -->
+<div id="editProfileModal" class="learning-modal">
+  <div class="learning-modal-box edit-profile-modal-box">
+
+    <div class="edit-profile-header">
+
+      <h2 class="edit-profile-title">
+        <i class="fa fa-user" aria-hidden="true"></i>
+        แก้ไขโปรไฟล์
+      </h2>
+
+      <button
+        class="learning-modal-close edit-profile-close"
+        type="button"
+        aria-label="ปิด"
+        onclick="LearningBase.closeEditProfile()">
+        ×
+      </button>
+
+    </div>
+
+    <div
+      id="editPhotoPreviewWrap"
+      class="edit-profile-preview-wrap"
+      hidden>
+
+      <img
+        id="editPhotoPreview"
+        class="edit-profile-preview"
+        alt="ตัวอย่างรูปโปรไฟล์">
+
+      <button
+        class="btn-red edit-profile-remove-photo"
+        type="button"
+        onclick="LearningBase.removeEditProfilePhoto()">
+        ลบรูป
+      </button>
+    </div>
+
+    <div class="edit-profile-form">
+
+      <label for="editFullname">ชื่อ-นามสกุล</label>
+      <input
+        id="editFullname"
+        class="learning-input"
+        type="text"
+        autocomplete="name">
+
+      <label for="editPhone">เบอร์โทร</label>
+      <input
+        id="editPhone"
+        class="learning-input"
+        type="tel"
+        maxlength="10"
+        inputmode="numeric"
+        autocomplete="tel">
+
+      <label for="editAddress">ที่อยู่</label>
+      <textarea
+        id="editAddress"
+        class="learning-input"
+        rows="4"></textarea>
+
+      <label for="editPhoto">แนบรูปภาพ</label>
+
+      <div class="edit-profile-file-box">
+        <input
+          id="editPhoto"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif">
+      </div>
+
+      <small class="edit-profile-help">
+        รองรับ JPG, PNG, WEBP หรือ GIF ขนาดไม่เกิน 5 MB
+      </small>
+
+      <div class="edit-profile-actions">
+        <button
+          id="saveEditProfileBtn"
+          class="btn-green"
+          type="button"
+          onclick="LearningBase.saveEditProfile()">
+          บันทึก
+        </button>
+      </div>
+
+    </div>
+
+    <div class="edit-profile-footer">
+      <button
+        class="profile-logout-btn edit-profile-logout-btn"
+        type="button"
+        onclick="LearningBase.logoutFromEditProfile()">
+        ออกจากระบบ
+      </button>
+    </div>
+
+  </div>
+</div>
+<!-- Cart Modal -->
+<div id="cartModal" class="learning-modal">
+  <div class="learning-modal-box">
+
+    <button
+      class="btn-red learning-modal-close"
+      type="button"
+      aria-label="ปิด"
+      onclick="LearningBase.closeModal('cartModal')">
+      ×
+    </button>
+
+    <h2>🛒 ตะกร้ากิจกรรมของคุณ</h2>
+
+    <div class="learning-modal-content">
+      <div id="cartList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="detailModal" class="learning-modal">
+  <div class="learning-modal-box" style="max-width:900px">
+    <div id="detailContent"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:15px">
+      <button id="detailAddCartBtn"><i class="bi bi-bag-plus-fill"></i> ใส่ตะกร้า</button>
+     <button
+    class="detail-close-btn"
+    type="button"
+    aria-label="ปิด"
+    onclick="LearningBase.closeModal('detailModal')">
+    ×
+</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Popup รายละเอียดหนังสือ -->
+</div>
+
+  
+  
+
+  
+
+<!-- เมนูด้านล่างสำหรับสมาร์ทโฟนและแท็บเล็ต -->
+<nav id="mobileBottomNav"
+     class="mobile-bottom-nav"
+     aria-label="เมนูด้านล่าง">
+
+  <a href="#home" class="mobile-bottom-link active" data-mobile-bottom-item data-menu-key="home">
+    <i class="fa-solid fa-house" aria-hidden="true"></i>
+    <span>Home</span>
+  </a>
+
+  <button type="button" class="mobile-bottom-link mobile-bottom-menu-trigger" data-mobile-bottom-item data-menu-key="works" aria-expanded="false">
+    <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+    <span>ผลงานของเรา</span>
+  </button>
+
+  <a href="https://edudole.github.io/tambol_prototype1/#cliproomBox" class="mobile-bottom-link" data-mobile-bottom-item data-menu-key="cliproom">
+    <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+    <span>หลักสูตรออนไลน์</span>
+  </a>
+
+  <a href="https://edudole.github.io/tambol_prototype1/#learningBaseModule" class="mobile-bottom-link" data-mobile-bottom-item data-menu-key="shopactivity">
+    <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+    <span>ช้อปกิจกรรม</span>
+  </a>
+
+  <button type="button" class="mobile-bottom-link mobile-bottom-menu-trigger" data-mobile-bottom-item data-menu-key="district" aria-expanded="false">
+    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+    <span>สกร.ระดับตำบล</span>
+  </button>
+
+  <button type="button" class="mobile-bottom-link mobile-bottom-menu-trigger" data-mobile-bottom-item data-menu-key="library" aria-expanded="false">
+    <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+    <span>ห้องสมุด</span>
+  </button>
+
+  <button id="mobileBottomMore" type="button" class="mobile-bottom-link mobile-bottom-more" aria-expanded="false" hidden>
+    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+    <span>เมนู</span>
+  </button>
+
+  <div id="mobileBottomPanel" class="mobile-bottom-panel" hidden>
+    <div class="mobile-bottom-panel-head">
+      <strong id="mobileBottomPanelTitle">เมนู</strong>
+      <button id="mobileBottomPanelClose" type="button" aria-label="ปิดเมนู">×</button>
+    </div>
+    <div id="mobileBottomPanelBody" class="mobile-bottom-panel-body"></div>
+  </div>
+</nav>
+<script defer src="mobile-bottom-nav.js?v=20260902-mobile-nav-1"></script>
+  <!-- Popup ประชาสัมพันธ์จากชีต boss -->
+  <div id="bossPopup" class="boss-popup" hidden aria-hidden="true">
+    <div class="boss-popup-dialog" role="dialog" aria-modal="true" aria-label="ประชาสัมพันธ์">
+      <button id="bossPopupClose" class="boss-popup-close" type="button" aria-label="ปิด">×</button>
+      <img id="bossPopupImage" class="boss-popup-image" src="" alt="ภาพประชาสัมพันธ์">
+      <div id="bossPopupActions" class="boss-popup-actions" hidden>
+        <a id="bossPopupDetail" class="boss-popup-detail" href="#" target="_blank" rel="noopener noreferrer">รายละเอียด</a>
+      </div>
+    </div>
+  </div>
+
+  <script defer src="button-section.js?v=20260904-library-buttonsection-1"></script>
+  <script defer src="book-featured.js?v=20260904-book-admin-1"></script>
+  <script defer src="index-fast.js?v=20260904-library-buttonsection-1"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <script src="app-config.js?v=20260901-central-api-1"></script>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="รวบรวมผลงาน Best Practice แนวปฏิบัติที่เป็นเลิศ">
+  <title>Best Practice | แนวปฏิบัติที่เป็นเลิศ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="best-practice.css?v=20260818-1">
+  <link rel="stylesheet" href="admin-subpage.css?v=20260826-1">
+  <link rel="stylesheet" href="best-practice-manager.css?v=20260826-1">
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <main class="bp-page">
+    <div class="bp-container">
+      <div class="bp-topbar admin-subpage-topbar">
+        <button class="admin-manage-data-button" type="button" data-admin-page="best_practice" hidden>จัดการข้อมูล</button>
+        <a class="bp-back" href="index.html" aria-label="กลับหน้าหลัก" onclick="return backToHome(event)">← กลับหน้าหลัก</a>
+      </div>
+
+      <header class="bp-heading">
+        <h1>Best Practice</h1>
+        <span class="bp-heading-line" aria-hidden="true"></span>
+        <p>แนวปฏิบัติที่เป็นเลิศ</p>
+      </header>
+
+      <div id="bestPracticeStatus" class="bp-status" role="status">
+        <span class="bp-spinner" aria-hidden="true"></span>
+        <span>กำลังโหลดรายการ...</span>
+      </div>
+
+      <section id="bestPracticeGrid" class="bp-grid" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="best-practice.js?v=20260826-2"></script>
+  <script src="admin-subpage.js?v=20260826-1"></script>
+  <script src="best-practice-manager.js?v=20260826-1"></script>
+  <script>
+function backToHome(event) {
+  event.preventDefault();
+
+  // หากเปิดจากแท็บเดิม ให้ปิดแท็บย่อยเมื่อย้อนกลับ
+  if (window.opener && !window.opener.closed) {
+    window.close();
+    return false;
+  }
+
+  // เปิดในแท็บเดียวกัน
+  if (window.history.length > 1) {
+    window.history.back();
+    return false;
+  }
+
+  // กลับหน้าแรกโดยตรง
+  window.location.href = 'index.html';
+  return false;
+}
+</script>
+</body>
+</html>

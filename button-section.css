@@ -1,0 +1,246 @@
+/* =========================================================
+   BUTTON SECTION - Library
+   Public shortcut buttons + Admin manager
+   ========================================================= */
+.button-section{
+  position:relative;
+  padding:48px 0 42px;
+  background:linear-gradient(180deg,#f7f9fc 0%,#ffffff 100%);
+  overflow:visible;
+}
+.button-section .container{position:relative}
+.button-section-admin-actions{
+  display:flex;
+  justify-content:center;
+  margin:0 0 18px;
+}
+.button-section-manage{
+  border:0;
+  border-radius:999px;
+  padding:11px 18px;
+  background:#ea580c;
+  color:#fff;
+  font:700 14px/1 "Kanit",sans-serif;
+  cursor:pointer;
+  box-shadow:0 9px 24px rgba(234,88,12,.24);
+}
+.button-section-manage i{margin-right:7px}
+.button-section-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:18px;
+  align-items:stretch;
+}
+.button-section-empty,
+.button-section-loading{
+  grid-column:1/-1;
+  min-height:116px;
+  display:grid;
+  place-items:center;
+  color:#64748b;
+  font:600 15px/1.5 "Kanit",sans-serif;
+}
+.button-section-item{
+  --button-bg:#2563eb;
+  --button-color:#ffffff;
+  min-height:68px;
+  border-radius:16px;
+  background:var(--button-bg);
+  color:var(--button-color);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:14px 20px;
+  font:800 18px/1.2 "Kanit",sans-serif;
+  letter-spacing:.01em;
+  box-shadow:0 10px 22px color-mix(in srgb,var(--button-bg) 30%,transparent);
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+  overflow:hidden;
+}
+.button-section-item:hover{
+  transform:translateY(-3px);
+  filter:brightness(1.04);
+  box-shadow:0 15px 30px color-mix(in srgb,var(--button-bg) 34%,transparent);
+}
+.button-section-icon{
+  width:34px;
+  height:34px;
+  object-fit:contain;
+  flex:0 0 34px;
+}
+.button-section-label{display:block;text-align:center}
+.button-section-item.is-text{min-height:58px;border-radius:12px}
+.button-section-item.is-icon-text{justify-content:flex-start;padding-left:22px;padding-right:22px}
+.button-section-item.is-icon-only{
+  width:86px;
+  min-width:86px;
+  min-height:86px;
+  justify-self:center;
+  border-radius:50%;
+  padding:17px;
+}
+.button-section-item.is-icon-only .button-section-icon{width:46px;height:46px;flex-basis:46px}
+.button-section-item.is-icon-only .button-section-label{
+  position:absolute!important;
+  width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;border:0!important;
+}
+.button-section-item.is-icon-top{
+  min-height:118px;
+  flex-direction:column;
+  gap:8px;
+  padding:18px 14px;
+}
+.button-section-item.is-icon-top .button-section-icon{width:44px;height:44px;flex-basis:44px}
+.button-section-item.is-compact{
+  min-height:52px;
+  border-radius:999px;
+  font-size:15px;
+  padding:10px 18px;
+}
+.button-section-item.is-compact .button-section-icon{width:26px;height:26px;flex-basis:26px}
+
+/* Admin popup */
+.button-manager-popup{font-family:"Kanit",sans-serif!important}
+.button-manager-shell{text-align:left;color:#0f172a}
+.button-manager-toolbar{
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) minmax(260px,1.25fr) minmax(130px,1fr);
+  align-items:end;
+  gap:18px;
+  margin-bottom:14px;
+}
+.button-manager-style-wrap{display:grid;gap:6px;min-width:280px}
+
+.button-manager-preview{
+  min-width:260px;
+  width:100%;
+  justify-self:center;
+  text-align:center;
+}
+.button-manager-preview-caption{
+  margin-bottom:6px;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+}
+.button-manager-preview-stage{
+  min-height:86px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 12px;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:linear-gradient(135deg,#f8fafc,#ffffff);
+}
+.button-manager-preview-button{
+  width:min(260px,100%);
+  max-width:260px;
+  min-height:54px;
+  pointer-events:none;
+  user-select:none;
+  font-size:15px;
+  box-shadow:0 7px 16px color-mix(in srgb,var(--button-bg) 24%,transparent);
+}
+.button-manager-preview-button.is-icon-only{
+  width:74px;
+  min-width:74px;
+  min-height:74px;
+  max-width:74px;
+}
+.button-manager-preview-button.is-icon-top{min-height:92px;max-width:150px}
+.button-manager-preview-button.is-compact{max-width:220px}
+.button-manager-preview-button.is-model{
+  border:2px dashed #cbd5e1;
+  background:#f8fafc;
+  color:#94a3b8;
+  box-shadow:none;
+}
+.button-manager-preview-icon-model{
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  display:grid;
+  place-items:center;
+  border:2px dashed currentColor;
+  border-radius:9px;
+  opacity:.9;
+  font-size:16px;
+}
+.button-manager-preview-button.is-icon-only .button-manager-preview-icon-model{
+  width:42px;height:42px;flex-basis:42px;border-radius:50%;
+}
+.button-manager-preview-button.is-icon-top .button-manager-preview-icon-model{
+  width:40px;height:40px;flex-basis:40px;
+}
+.button-manager-preview-button.is-compact .button-manager-preview-icon-model{
+  width:24px;height:24px;flex-basis:24px;border-radius:7px;font-size:12px;
+}
+.button-manager-style-wrap label{font-weight:800;font-size:14px}
+.button-manager-style{
+  width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;
+  font:600 14px/1.2 "Kanit",sans-serif;background:#fff;color:#0f172a;
+}
+.button-manager-add{
+  justify-self:end;
+  border:0;border-radius:10px;padding:11px 16px;background:#16a34a;color:#fff;
+  font:800 14px/1 "Kanit",sans-serif;cursor:pointer;
+}
+.button-manager-note{
+  margin:8px 0 14px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1e40af;
+  font-size:13px;line-height:1.55;
+}
+.button-manager-table-wrap{overflow:auto;max-height:62vh;border:1px solid #e2e8f0;border-radius:12px}
+.button-manager-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;background:#fff}
+.button-manager-table th,
+.button-manager-table td{padding:9px;border-bottom:1px solid #e2e8f0;vertical-align:middle}
+.button-manager-table th{position:sticky;top:0;z-index:2;background:#f8fafc;font-size:13px;font-weight:800;white-space:nowrap}
+.button-manager-table tbody tr{transition:background .15s ease,box-shadow .15s ease}
+.button-manager-table tbody tr.is-previewing{background:#eff6ff;box-shadow:inset 4px 0 0 #2563eb}
+.button-manager-table tbody tr.is-previewing td{background:transparent}
+.button-manager-table input[type="text"],
+.button-manager-table input[type="url"]{
+  width:100%;min-width:140px;border:1px solid #cbd5e1;border-radius:8px;padding:8px 9px;
+  font:500 13px/1.3 "Kanit",sans-serif;
+}
+.button-manager-table input[type="color"]{width:46px;height:36px;border:0;background:transparent;padding:0;cursor:pointer}
+.button-manager-order{display:flex;gap:4px;justify-content:center}
+.button-manager-small-btn{
+  width:32px;height:32px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;color:#334155;
+}
+.button-manager-delete{border-color:#fecaca;color:#dc2626;background:#fff7f7}
+.button-manager-icon-cell{min-width:250px}
+.button-manager-icon-row{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center}
+.button-manager-upload-label{
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border-radius:8px;padding:8px 10px;
+  background:#7c3aed;color:#fff;font-size:12px;font-weight:800;cursor:pointer;
+}
+.button-manager-file{display:none}
+.button-manager-icon-status{display:block;margin-top:5px;font-size:11px;color:#64748b;max-width:250px;white-space:normal}
+.button-manager-icon-preview{width:36px;height:36px;object-fit:contain;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0}
+.button-manager-visible{text-align:center}
+.button-manager-icon-column.is-hidden{display:none}
+@media(max-width:980px){
+  .button-manager-toolbar{grid-template-columns:1fr 1fr}
+  .button-manager-preview{grid-column:1/-1;grid-row:2;max-width:420px}
+  .button-manager-add{grid-column:2;grid-row:1}
+}
+@media(max-width:720px){
+  .button-manager-toolbar{grid-template-columns:1fr}
+  .button-manager-style-wrap{min-width:0}
+  .button-manager-preview{grid-column:1;grid-row:2;min-width:0;max-width:none}
+  .button-manager-add{grid-column:1;grid-row:3;justify-self:stretch}
+  .button-manager-preview-stage{min-height:78px}
+  .button-section{padding:34px 0 30px}
+  .button-section-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .button-section-item{font-size:15px;padding:12px;min-height:60px;border-radius:13px}
+  .button-section-item.is-icon-text{justify-content:center;padding-left:12px;padding-right:12px}
+  .button-section-item.is-icon-only{width:72px;min-width:72px;min-height:72px}
+  .button-section-item.is-icon-only .button-section-icon{width:38px;height:38px;flex-basis:38px}
+  .button-section-item.is-icon-top{min-height:100px}
+}
