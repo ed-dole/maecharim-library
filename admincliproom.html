@@ -1,23 +1,54 @@
 <!doctype html>
 <html lang="th">
 <head>
-    <script src="app-config.js?v=20260901-central-api-1"></script>
-<meta charset="utf-8">
+  <script src="app-config.js?v=20260901-central-api-1"></script>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>เพิ่ม/แก้ไขหลักสูตร</title>
   <style>
-    html,body{width:100%;height:100%;margin:0;background:#f3f6fb;overflow:hidden}
+    html,body{width:100%;height:100%;margin:0;background:#f3f6fb;overflow:hidden;font-family:Arial,sans-serif}
     .admincliproom-frame{display:block;width:100%;height:100vh;border:0;background:#fff}
+    .admincliproom-frame[hidden]{display:none}
+    .admincliproom-status{height:100vh;display:grid;place-items:center;text-align:center;padding:24px;color:#123b69;font-weight:700}
+    .admincliproom-status.error{color:#b42318}
   </style>
   <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
 </head>
 <body class="theme-v2">
-  <iframe
-    class="admincliproom-frame"
-    src="https://script.google.com/macros/s/AKfycbxz5N27BOd95F2tbsNOCHobU84eTIzzbNhg9V3CZmWxFmeMO59apZYC5PtDhzH2JVk/exec?page=admin"
-    title="เพิ่ม/แก้ไขหลักสูตร"
-    loading="eager"
-    allow="clipboard-read; clipboard-write">
-  </iframe>
+  <div class="admincliproom-status" id="adminCliproomStatus">กำลังเปิดหน้าจัดการหลักสูตร...</div>
+  <iframe id="adminCliproomFrame" class="admincliproom-frame" hidden title="เพิ่ม/แก้ไขหลักสูตร" loading="eager" allow="clipboard-read; clipboard-write"></iframe>
+  <script>
+  (() => {
+    'use strict';
+    const MAIN_API_URL = String((window.APP_CONFIG && window.APP_CONFIG.API_URL) || '').trim();
+    const status = document.getElementById('adminCliproomStatus');
+    const frame = document.getElementById('adminCliproomFrame');
+
+    async function resolveCliproomExecUrl() {
+      const mainApi = String(MAIN_API_URL || '').trim();
+      if (!mainApi) throw new Error('ไม่พบ URL ของ Apps Script หลัก');
+      const url = new URL(mainApi);
+      url.searchParams.set('mode', 'cliproomexec');
+      url.searchParams.set('_t', String(Date.now()));
+      const response = await fetch(url.toString(), { cache: 'no-store', credentials: 'omit' });
+      const result = await response.json();
+      if (!response.ok || result?.success === false) throw new Error(result?.message || `HTTP ${response.status}`);
+      const execUrl = String(result?.url || '').trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
+      return execUrl;
+    }
+
+    resolveCliproomExecUrl().then(execUrl => {
+      const target = new URL(execUrl);
+      target.searchParams.set('page', 'admin');
+      frame.src = target.toString();
+      frame.hidden = false;
+      status.style.display = 'none';
+    }).catch(error => {
+      status.classList.add('error');
+      status.textContent = 'เปิดหน้าจัดการหลักสูตรไม่สำเร็จ: ' + error.message;
+    });
+  })();
+  </script>
 </body>
 </html>

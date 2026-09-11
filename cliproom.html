@@ -1,3 +1,58 @@
-<!doctype html><html lang="th"><head>  <script src="app-config.js?v=20260901-central-api-1"></script>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="description" content="ระบบ Cliproom อบรมออนไลน์ผ่านวิดีโอ แบบทดสอบ และเกียรติบัตร"><title>Cliproom — ระบบอบรมออนไลน์</title><style>*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#eef5fb;font-family:Arial,sans-serif;overflow:hidden}.loading{position:fixed;inset:0;display:grid;place-items:center;color:#123b69;font-weight:700;z-index:0}.spinner{width:52px;height:52px;margin:0 auto 13px;border:6px solid #cfe3f3;border-top-color:#0b73ce;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}iframe{position:relative;z-index:1;display:block;width:100%;height:100%;border:0;background:#fff}</style>  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
-</head><body class="theme-v2"><div class="loading"><div><div class="spinner"></div>กำลังเปิดระบบ Cliproom...</div></div><iframe src="https://script.google.com/macros/s/AKfycbwMYlQQN9RXTBwyCelTwqqXl1tIsxDfWfbi3mJsqaZEF5uRIDpkRTx7fstze6eA96fvAQ/exec" title="ระบบ Cliproom" allow="fullscreen; autoplay" referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+  <script src="app-config.js?v=20260901-central-api-1"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="description" content="ระบบ Cliproom อบรมออนไลน์ผ่านวิดีโอ แบบทดสอบ และเกียรติบัตร">
+  <title>Cliproom — ระบบอบรมออนไลน์</title>
+  <style>
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#eef5fb;font-family:Arial,sans-serif;overflow:hidden}
+    .loading{position:fixed;inset:0;display:grid;place-items:center;color:#123b69;font-weight:700;z-index:0;text-align:center;padding:24px}
+    .spinner{width:52px;height:52px;margin:0 auto 13px;border:6px solid #cfe3f3;border-top-color:#0b73ce;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    iframe{position:relative;z-index:1;display:block;width:100%;height:100%;border:0;background:#fff}
+    iframe[hidden]{display:none}
+    .error{color:#b42318}
+  </style>
+  <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+</head>
+<body class="theme-v2">
+  <div class="loading" id="cliproomStatus"><div><div class="spinner" id="cliproomSpinner"></div><div id="cliproomStatusText">กำลังเปิดระบบ Cliproom...</div></div></div>
+  <iframe id="cliproomFrame" hidden title="ระบบ Cliproom" allow="fullscreen; autoplay" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <script>
+  (() => {
+    'use strict';
+    const MAIN_API_URL = String((window.APP_CONFIG && window.APP_CONFIG.API_URL) || '').trim();
+    const status = document.getElementById('cliproomStatus');
+    const statusText = document.getElementById('cliproomStatusText');
+    const spinner = document.getElementById('cliproomSpinner');
+    const frame = document.getElementById('cliproomFrame');
+
+    async function resolveCliproomExecUrl() {
+      const mainApi = String(MAIN_API_URL || '').trim();
+      if (!mainApi) throw new Error('ไม่พบ URL ของ Apps Script หลัก');
+      const url = new URL(mainApi);
+      url.searchParams.set('mode', 'cliproomexec');
+      url.searchParams.set('_t', String(Date.now()));
+      const response = await fetch(url.toString(), { cache: 'no-store', credentials: 'omit' });
+      const result = await response.json();
+      if (!response.ok || result?.success === false) throw new Error(result?.message || `HTTP ${response.status}`);
+      const execUrl = String(result?.url || '').trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
+      return execUrl;
+    }
+
+    resolveCliproomExecUrl().then(execUrl => {
+      frame.src = execUrl;
+      frame.hidden = false;
+      status.style.display = 'none';
+    }).catch(error => {
+      spinner.style.display = 'none';
+      status.classList.add('error');
+      statusText.textContent = 'เปิดระบบ Cliproom ไม่สำเร็จ: ' + error.message;
+    });
+  })();
+  </script>
+</body>
+</html>

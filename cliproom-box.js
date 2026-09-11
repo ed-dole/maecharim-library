@@ -1,9 +1,11 @@
 (() => {
   'use strict';
 
-  const CLIPROOM_WEB_APP_URL =
-    'https://script.google.com/macros/s/AKfycbwMYlQQN9RXTBwyCelTwqqXl1tIsxDfWfbi3mJsqaZEF5uRIDpkRTx7fstze6eA96fvAQ/exec';
-  const CACHE_KEY = 'SITE_FAST:cliproom-catalog-v1';
+  const MAIN_API_URL =
+    (window.SiteFast && window.SiteFast.API_URL) ||
+    (window.APP_CONFIG && window.APP_CONFIG.API_URL) ||
+    '';
+  const CACHE_KEY = 'SITE_FAST:cliproom-catalog-v2-dynamic-exec';
   const CACHE_AGE = 5 * 60 * 1000;
   const track = document.getElementById('cliproomTrack');
   if (!track) return;
@@ -13,6 +15,7 @@
   let perPage = 3;
   let timer = null;
   let loadingStarted = false;
+  let activeCliproomExecUrl = '';
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
@@ -20,9 +23,34 @@
 
   const cardsPerPage = () => window.innerWidth <= 620 ? 1 : window.innerWidth <= 900 ? 2 : 3;
 
+  async function resolveCliproomExecUrl() {
+    const mainApi = String(MAIN_API_URL || '').trim();
+    if (!mainApi) throw new Error('ไม่พบ URL ของ Apps Script หลัก');
+
+    const url = new URL(mainApi);
+    url.searchParams.set('mode', 'cliproomexec');
+    url.searchParams.set('_t', String(Date.now()));
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit'
+    });
+    const result = await response.json();
+    if (!response.ok || result?.success === false) {
+      throw new Error(result?.message || `HTTP ${response.status}`);
+    }
+
+    const execUrl = String(result?.url || '').trim();
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) {
+      throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
+    }
+    return execUrl;
+  }
+
   function render() {
     if (!courses.length) {
-      track.innerHTML = '<div class="cliproom-loading cliproom-error">ยังโหลดรายการหลักสูตรไม่ได้<br>กรุณาอัปเดต Deployment ของ Apps Script</div>';
+      track.innerHTML = '<div class="cliproom-loading cliproom-error">ยังโหลดรายการหลักสูตรไม่ได้<br>กรุณาตรวจสอบ URL Cliproom ในชีตและ Deployment ของ Apps Script</div>';
       document.getElementById('cliproomDots').innerHTML = '';
       return;
     }
@@ -93,10 +121,10 @@
     if (courses.length > perPage) timer = setInterval(() => move(1), 6000);
   }
 
-  function readCache() {
+  function readCache(execUrl) {
     try {
       const saved = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-      if (!saved || Date.now() - saved.savedAt > CACHE_AGE) return null;
+      if (!saved || saved.execUrl !== execUrl || Date.now() - saved.savedAt > CACHE_AGE) return null;
       return saved.payload;
     } catch (_) {
       return null;
@@ -105,7 +133,11 @@
 
   function writeCache(payload) {
     try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), payload }));
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        execUrl: activeCliproomExecUrl,
+        payload
+      }));
     } catch (_) {}
   }
 
@@ -117,23 +149,34 @@
     restart();
   }
 
-  function loadCatalog() {
+  async function loadCatalog() {
     if (loadingStarted) return;
     loadingStarted = true;
 
-    const cached = readCache();
-    if (cached) {
-      receive(cached);
-      return;
-    }
+    try {
+      activeCliproomExecUrl = await resolveCliproomExecUrl();
+      const cached = readCache(activeCliproomExecUrl);
+      if (cached) {
+        receive(cached);
+        return;
+      }
 
-    window.cliproomCatalogCallback = receive;
-    const script = document.createElement('script');
-    script.src = CLIPROOM_WEB_APP_URL + '?mode=cliproomBox&callback=cliproomCatalogCallback';
-    script.async = true;
-    script.onerror = () => receive(null);
-    document.head.appendChild(script);
-    window.__cliproomTimeout = setTimeout(() => receive(null), 12000);
+      window.cliproomCatalogCallback = receive;
+      const catalogUrl = new URL(activeCliproomExecUrl);
+      catalogUrl.searchParams.set('mode', 'cliproomBox');
+      catalogUrl.searchParams.set('callback', 'cliproomCatalogCallback');
+      catalogUrl.searchParams.set('_t', String(Date.now()));
+
+      const script = document.createElement('script');
+      script.src = catalogUrl.toString();
+      script.async = true;
+      script.onerror = () => receive(null);
+      document.head.appendChild(script);
+      window.__cliproomTimeout = setTimeout(() => receive(null), 12000);
+    } catch (error) {
+      console.error('โหลด URL Cliproom ไม่สำเร็จ:', error);
+      receive(null);
+    }
   }
 
   window.cliproomCatalogCallback = receive;
