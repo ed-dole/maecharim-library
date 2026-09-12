@@ -42,6 +42,18 @@ function normalize(items){
   return out;
 }
 async function getLayout(){
+  if(window.SiteFast?.getHomeFast){
+    try{
+      const home=await window.SiteFast.getHomeFast();
+      const homeData=home?.data||home||{};
+      if(Array.isArray(homeData.sectionLayout))return normalize(homeData.sectionLayout);
+    }catch(e){console.warn('sectionLayout homefast fallback:',e)}
+  }
+  if(window.SiteFast?.fetchMode){
+    const j=await window.SiteFast.fetchMode('sectionlayout',{}, {key:'section-layout-v3',ttl:5*60*1000,staleTtl:24*60*60*1000});
+    if(j?.success===false)throw new Error(j.message||'โหลดการจัดเรียง Section ไม่สำเร็จ');
+    return normalize(j?.items||[]);
+  }
   const r=await fetch(API+'?mode=sectionlayout&_t='+Date.now(),{cache:'no-store'}),j=await r.json();
   if(!r.ok||j.success===false)throw new Error(j.message||'โหลดการจัดเรียง Section ไม่สำเร็จ');
   return normalize(j.items);

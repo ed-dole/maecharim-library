@@ -4,23 +4,29 @@
 (() => {
   'use strict';
 
-  const API_URL =
-    window.APP_CONFIG.API_URL;
+  const API_URL = window.APP_CONFIG.API_URL;
 
-  const HOMEFAST_CACHE_KEY = 'homefast-v8-performance';
-  const HOMEFAST_TTL = 2 * 60 * 1000;
-  const HOMEFAST_STALE_TTL = 15 * 60 * 1000;
-  const NETWORK_TIMEOUT = 15000;
+  // PERFORMANCE/RESILIENCE V10
+  // - cache-first + stale-while-revalidate
+  // - deduplicate requests
+  // - limit parallel Apps Script reads to avoid cold-start congestion
+  // - retry transient read failures until the connection succeeds
+  const HOMEFAST_CACHE_KEY = 'homefast-v10-resilient-20260912';
+  const HOMEFAST_TTL = 5 * 60 * 1000;
+  const HOMEFAST_STALE_TTL = 24 * 60 * 60 * 1000;
+  const NETWORK_TIMEOUT = 45 * 1000;
+  const MAX_CONCURRENT_READS = 2;
+  const RETRY_DELAYS = [900, 1600, 3000, 5500, 9000, 15000, 30000];
+
   const inflight = new Map();
+  const backgroundInflight = new Map();
+  const readQueue = [];
+  let activeReads = 0;
   let homeFastPromise = null;
-  let backgroundRefreshStarted = false;
 
   function isAdminMode() {
-    try {
-      return Boolean(sessionStorage.getItem('mysiteAdminToken'));
-    } catch (_) {
-      return false;
-    }
+    try { return Boolean(sessionStorage.getItem('mysiteAdminToken')); }
+    catch (_) { return false; }
   }
 
   function storageRead(storage, key, maxAgeMs) {
@@ -29,9 +35,7 @@
       const saved = JSON.parse(storage.getItem('SITE_FAST:' + key) || 'null');
       if (!saved || !saved.savedAt || Date.now() - saved.savedAt > maxAgeMs) return null;
       return saved;
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   }
 
   function readCache(key, maxAgeMs) {
@@ -46,39 +50,147 @@
     try { localStorage.setItem('SITE_FAST:' + key, payload); } catch (_) {}
   }
 
-  function withTimeout(promise, ms, message) {
-    let timer;
-    const timeout = new Promise((_, reject) => {
-      timer = window.setTimeout(() => reject(new Error(message || 'การเชื่อมต่อใช้เวลานานเกินไป')), ms);
-    });
-    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function networkJson(url) {
-    const response = await withTimeout(fetch(url, {
-      method: 'GET',
-      cache: 'default',
-      credentials: 'omit'
-    }), NETWORK_TIMEOUT, 'Apps Script ใช้เวลาตอบกลับนานเกินไป');
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    if (result?.success === false) throw new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
-    return result;
+  function retryDelay(attempt) {
+    const base = RETRY_DELAYS[Math.min(Math.max(0, attempt - 1), RETRY_DELAYS.length - 1)];
+    return Math.round(base * (0.88 + Math.random() * 0.24));
   }
 
-  async function fetchJson(url, options = {}) {
+  async function waitForRetry(ms) {
+    if (navigator.onLine === false) {
+      await Promise.race([
+        new Promise(resolve => window.addEventListener('online', resolve, { once: true })),
+        sleep(Math.max(ms, 15000))
+      ]);
+      return;
+    }
+    if (document.visibilityState === 'hidden') {
+      await Promise.race([
+        new Promise(resolve => {
+          const onVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            document.removeEventListener('visibilitychange', onVisible);
+            resolve();
+          };
+          document.addEventListener('visibilitychange', onVisible);
+        }),
+        sleep(Math.max(ms, 10000))
+      ]);
+      return;
+    }
+    await sleep(ms);
+  }
+
+  function acquireReadSlot() {
+    if (activeReads < MAX_CONCURRENT_READS) {
+      activeReads += 1;
+      return Promise.resolve();
+    }
+    return new Promise(resolve => readQueue.push(resolve)).then(() => { activeReads += 1; });
+  }
+
+  function releaseReadSlot() {
+    activeReads = Math.max(0, activeReads - 1);
+    const next = readQueue.shift();
+    if (next) next();
+  }
+
+  function isTransientAppError(message) {
+    const text = String(message || '').toLowerCase();
+    return /timeout|timed out|temporar|try again|service invoked too many|quota|rate limit|too many|internal error|server error|ใช้เวลาตอบกลับ|ลองใหม่|ชั่วคราว/.test(text);
+  }
+
+  async function networkJsonOnce(url) {
+    await acquireReadSlot();
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), NETWORK_TIMEOUT) : null;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'default',
+        credentials: 'omit',
+        signal: controller ? controller.signal : undefined
+      });
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        if (response.status >= 400 && response.status < 500 && ![408, 425, 429].includes(response.status)) {
+          error.siteFastPermanent = true;
+        }
+        throw error;
+      }
+
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); }
+      catch (_) { throw new Error('Apps Script ตอบกลับไม่ใช่ JSON'); }
+
+      if (result && result.success === false) {
+        const error = new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
+        if (!isTransientAppError(error.message)) error.siteFastPermanent = true;
+        throw error;
+      }
+      return result;
+    } finally {
+      if (timer) clearTimeout(timer);
+      releaseReadSlot();
+    }
+  }
+
+  async function networkJson(url, options = {}) {
+    const forever = options.forever !== false;
+    let attempt = 0;
+    while (true) {
+      try {
+        return await networkJsonOnce(url);
+      } catch (error) {
+        if (!forever || error?.siteFastPermanent) throw error;
+        attempt += 1;
+        const delay = retryDelay(attempt);
+        console.warn(`SiteFast retry #${attempt} in ${delay}ms:`, url, error?.message || error);
+        try {
+          window.dispatchEvent(new CustomEvent('sitefast:retry', {
+            detail: { url: String(url), attempt, delay, message: String(error?.message || error || '') }
+          }));
+        } catch (_) {}
+        await waitForRetry(delay);
+      }
+    }
+  }
+
+  function refreshKeyInBackground(url, key, ttl) {
+    if (!key || isAdminMode() || backgroundInflight.has(key)) return;
+    const job = networkJson(url)
+      .then(result => { if (ttl > 0) writeCache(key, result); return result; })
+      .catch(error => console.warn('SiteFast background refresh:', key, error))
+      .finally(() => backgroundInflight.delete(key));
+    backgroundInflight.set(key, job);
+  }
+
+  function fetchJson(url, options = {}) {
     const key = String(options.key || '').trim();
     const ttl = Number(options.ttl || 0);
-    const cached = ttl > 0 ? readCache(key, ttl) : null;
-    if (cached) return cached.data;
+    const staleTtl = Number(options.staleTtl || (ttl > 0 ? Math.max(24 * 60 * 60 * 1000, ttl * 12) : 0));
+
+    const fresh = ttl > 0 && key ? readCache(key, ttl) : null;
+    if (fresh) return Promise.resolve(fresh.data);
+
+    const stale = staleTtl > 0 && key ? readCache(key, staleTtl) : null;
+    if (stale) {
+      refreshKeyInBackground(url, key, ttl);
+      return Promise.resolve(stale.data);
+    }
 
     const inflightKey = key || String(url);
     if (inflight.has(inflightKey)) return inflight.get(inflightKey);
 
     const request = networkJson(url)
       .then(result => {
-        if (ttl > 0) writeCache(key, result);
+        if (ttl > 0 && key) writeCache(key, result);
         return result;
       })
       .finally(() => inflight.delete(inflightKey));
@@ -88,35 +200,18 @@
   }
 
   function refreshHomeFastInBackground() {
-    if (backgroundRefreshStarted || isAdminMode()) return;
-    backgroundRefreshStarted = true;
-
-    const run = () => {
-      networkJson(API_URL + '?mode=homefast')
-        .then(result => writeCache(HOMEFAST_CACHE_KEY, result))
-        .catch(() => {})
-        .finally(() => { backgroundRefreshStarted = false; });
-    };
-
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(run, { timeout: 2500 });
-    } else {
-      setTimeout(run, 1200);
-    }
+    refreshKeyInBackground(API_URL + '?mode=homefast', HOMEFAST_CACHE_KEY, HOMEFAST_TTL);
   }
 
   function getHomeFast() {
     if (homeFastPromise) return homeFastPromise;
 
-    // แสดงข้อมูลจาก cache ทันที แล้ว refresh เงียบ ๆ ภายหลัง
     const fresh = readCache(HOMEFAST_CACHE_KEY, HOMEFAST_TTL);
     if (fresh) {
-      // Cache ยังสด: แสดงทันทีและไม่ยิง Apps Script ซ้ำโดยไม่จำเป็น
       homeFastPromise = Promise.resolve(fresh.data);
       return homeFastPromise;
     }
 
-    // ถ้ามี cache เก่าที่ยังไม่เกิน 15 นาที ให้ใช้ก่อน เพื่อให้หน้าแสดงทันที
     const stale = readCache(HOMEFAST_CACHE_KEY, HOMEFAST_STALE_TTL);
     if (stale) {
       homeFastPromise = Promise.resolve(stale.data);
@@ -124,13 +219,17 @@
       return homeFastPromise;
     }
 
-    // รับ promise ที่เริ่ม fetch ตั้งแต่ <head> ถ้ามี เพื่อไม่ยิงซ้ำ
     const prefetched = window.__SITE_HOMEFAST_PREFETCH;
     const request = prefetched
-      ? Promise.resolve(prefetched).then(result => {
-          if (!result || result.success === false) throw new Error(result?.message || 'homefast ไม่สำเร็จ');
-          return result;
-        })
+      ? Promise.race([
+          Promise.resolve(prefetched),
+          sleep(30000).then(() => { throw new Error('homefast prefetch timeout'); })
+        ])
+          .then(result => {
+            if (!result || result.success === false) throw new Error(result?.message || 'homefast ไม่สำเร็จ');
+            return result;
+          })
+          .catch(() => networkJson(API_URL + '?mode=homefast'))
       : networkJson(API_URL + '?mode=homefast');
 
     homeFastPromise = request
@@ -166,7 +265,11 @@
     const mode = fallbackModes[name];
     if (!mode) return undefined;
 
-    const result = await fetchMode(mode, {}, { key: `home-part-${name}`, ttl: 120000 });
+    const result = await fetchMode(mode, {}, {
+      key: `home-part-${name}`,
+      ttl: 5 * 60 * 1000,
+      staleTtl: 24 * 60 * 60 * 1000
+    });
     if (name === 'activity') return result.activities || result.data || [];
     if (name === 'boss') return result.boss || result.data || result || {};
     if (name === 'setting') return result.data || result || {};
@@ -179,11 +282,17 @@
     Object.entries(params || {}).forEach(([key, value]) => {
       if (value !== undefined && value !== null) url.searchParams.set(key, value);
     });
-    const cacheKey = options.key || `${mode}:${JSON.stringify(params || {})}`;
-    return fetchJson(url.toString(), { key: cacheKey, ttl: options.ttl || 0 });
+    const cacheKey = Object.prototype.hasOwnProperty.call(options, 'key')
+      ? String(options.key || '')
+      : `${mode}:${JSON.stringify(params || {})}`;
+    return fetchJson(url.toString(), {
+      key: cacheKey,
+      ttl: Number(options.ttl || 0),
+      staleTtl: Number(options.staleTtl || 0)
+    });
   }
 
-  function whenNear(elementOrId, callback, rootMargin = '1100px 0px') {
+  function whenNear(elementOrId, callback, rootMargin = '700px 0px') {
     const start = () => {
       const element = typeof elementOrId === 'string'
         ? document.getElementById(elementOrId)
@@ -194,7 +303,7 @@
       const runOnce = () => {
         if (started) return;
         started = true;
-        callback();
+        Promise.resolve().then(callback).catch(error => console.warn('lazy section:', error));
       };
 
       if (!('IntersectionObserver' in window)) {
@@ -203,7 +312,7 @@
       }
 
       const rect = element.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 1100) {
+      if (rect.top < window.innerHeight + 700) {
         runOnce();
         return;
       }
@@ -243,13 +352,12 @@
     getHomeFast,
     homePart,
     whenNear,
-    clear
+    clear,
+    networkJson
   };
 
-  getHomeFast().catch(() => {});
+  getHomeFast().catch(error => console.warn('homefast initial:', error));
 })();
-
-;
 
 /* ===== script.js ===== */
 (() => {
@@ -1228,6 +1336,18 @@ function normalize(items){
   return out;
 }
 async function getLayout(){
+  if(window.SiteFast?.getHomeFast){
+    try{
+      const home=await window.SiteFast.getHomeFast();
+      const homeData=home?.data||home||{};
+      if(Array.isArray(homeData.sectionLayout))return normalize(homeData.sectionLayout);
+    }catch(e){console.warn('sectionLayout homefast fallback:',e)}
+  }
+  if(window.SiteFast?.fetchMode){
+    const j=await window.SiteFast.fetchMode('sectionlayout',{}, {key:'section-layout-v3',ttl:5*60*1000,staleTtl:24*60*60*1000});
+    if(j?.success===false)throw new Error(j.message||'โหลดการจัดเรียง Section ไม่สำเร็จ');
+    return normalize(j?.items||[]);
+  }
   const r=await fetch(API+'?mode=sectionlayout&_t='+Date.now(),{cache:'no-store'}),j=await r.json();
   if(!r.ok||j.success===false)throw new Error(j.message||'โหลดการจัดเรียง Section ไม่สำเร็จ');
   return normalize(j.items);
@@ -1456,7 +1576,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       const url = new URL(API_URL);
       url.searchParams.set('mode', 'homeSummary');
       const response = window.SiteFast
-        ? await window.SiteFast.fetchMode('homeSummary', {}, { key: '', ttl: 0 }).then(data => ({ ok: true, json: async () => data }))
+        ? await window.SiteFast.fetchMode('homeSummary', {}, { key: 'home-summary-v4', ttl: 5 * 60 * 1000, staleTtl: 24 * 60 * 60 * 1000 }).then(data => ({ ok: true, json: async () => data }))
         : await fetch(url.toString(), { cache: 'default' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -2515,12 +2635,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (() => {
   'use strict';
 
-  const MAIN_API_URL =
-    (window.SiteFast && window.SiteFast.API_URL) ||
-    (window.APP_CONFIG && window.APP_CONFIG.API_URL) ||
-    '';
-  const CACHE_KEY = 'SITE_FAST:cliproom-catalog-v2-dynamic-exec';
-  const CACHE_AGE = 5 * 60 * 1000;
+  const MAIN_API_URL = (window.SiteFast && window.SiteFast.API_URL) || (window.APP_CONFIG && window.APP_CONFIG.API_URL) || '';
+  const EXEC_CACHE_KEY = 'SITE_FAST:cliproom-exec-v3';
+  const EXEC_CACHE_AGE = 10 * 60 * 1000;
+  const CATALOG_CACHE_KEY = 'SITE_FAST:cliproom-catalog-v3-dynamic-exec';
+  const CATALOG_STALE_AGE = 24 * 60 * 60 * 1000;
+  const JSONP_TIMEOUT = 45 * 1000;
+  const RETRY_DELAYS = [1000, 1800, 3200, 6000, 10000, 16000, 30000];
+
   const track = document.getElementById('cliproomTrack');
   if (!track) return;
 
@@ -2536,73 +2658,140 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }[char]));
 
   const cardsPerPage = () => window.innerWidth <= 620 ? 1 : window.innerWidth <= 900 ? 2 : 3;
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const retryDelay = attempt => RETRY_DELAYS[Math.min(Math.max(0, attempt - 1), RETRY_DELAYS.length - 1)];
 
-  function resolveCliproomExecUrl() {
-      const mainApi = String(MAIN_API_URL || '').trim();
-      if (!mainApi) return Promise.reject(new Error('ไม่พบ URL ของ Apps Script หลัก'));
-  
-      return new Promise((resolve, reject) => {
-        const callbackName = '__cliproomExecResolver_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-        const script = document.createElement('script');
-        let timer = null;
-  
-        const cleanup = () => {
-          if (timer) clearTimeout(timer);
-          try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
-          if (script.parentNode) script.parentNode.removeChild(script);
-        };
-  
-        window[callbackName] = result => {
-          try {
-            if (!result || result.success === false) {
-              throw new Error((result && result.message) || 'อ่าน URL Cliproom จากชีตไม่สำเร็จ');
-            }
-            const execUrl = String(result.url || '').trim();
-            if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) {
-              throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
-            }
-            cleanup();
-            resolve(execUrl);
-          } catch (error) {
-            cleanup();
-            reject(error);
-          }
-        };
-  
-        try {
-          const url = new URL(mainApi);
-          url.searchParams.set('mode', 'cliproomexec');
-          url.searchParams.set('callback', callbackName);
-          url.searchParams.set('_t', String(Date.now()));
-          script.src = url.toString();
-          script.async = true;
-          script.onerror = () => {
-            cleanup();
-            reject(new Error('เชื่อมต่อ Apps Script หลักไม่สำเร็จ'));
-          };
-          timer = setTimeout(() => {
-            cleanup();
-            reject(new Error('Apps Script หลักใช้เวลาตอบกลับนานเกินไป'));
-          }, 15000);
-          document.head.appendChild(script);
-        } catch (error) {
-          cleanup();
-          reject(error);
-        }
-      });
+  async function waitRetry(ms) {
+    if (navigator.onLine === false) {
+      await Promise.race([
+        new Promise(resolve => window.addEventListener('online', resolve, { once: true })),
+        sleep(Math.max(ms, 15000))
+      ]);
+      return;
     }
+    await sleep(ms);
+  }
+
+  function storageGet(key, maxAge) {
+    for (const storage of [window.sessionStorage, window.localStorage]) {
+      try {
+        const saved = JSON.parse(storage.getItem(key) || 'null');
+        if (saved && saved.savedAt && Date.now() - saved.savedAt <= maxAge) return saved;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function storageSet(key, value) {
+    const raw = JSON.stringify(value);
+    try { sessionStorage.setItem(key, raw); } catch (_) {}
+    try { localStorage.setItem(key, raw); } catch (_) {}
+  }
+
+  function storageRemove(key) {
+    try { sessionStorage.removeItem(key); } catch (_) {}
+    try { localStorage.removeItem(key); } catch (_) {}
+  }
+
+  function jsonpRequest(baseUrl, params) {
+    return new Promise((resolve, reject) => {
+      const callbackName = '__cliproomJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      let timeoutId = null;
+      let settled = false;
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      };
+      const finish = (ok, value) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        ok ? resolve(value) : reject(value);
+      };
+
+      window[callbackName] = payload => finish(true, payload);
+
+      try {
+        const url = new URL(baseUrl);
+        Object.entries(params || {}).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) url.searchParams.set(key, value);
+        });
+        url.searchParams.set('callback', callbackName);
+        url.searchParams.set('_t', String(Date.now()));
+        script.src = url.toString();
+        script.async = true;
+        script.onerror = () => finish(false, new Error('เชื่อมต่อ Apps Script ไม่สำเร็จ'));
+        timeoutId = setTimeout(() => finish(false, new Error('Apps Script ใช้เวลาตอบกลับนานเกินไป')), JSONP_TIMEOUT);
+        document.head.appendChild(script);
+      } catch (error) {
+        finish(false, error);
+      }
+    });
+  }
+
+  function readExecCache() {
+    const saved = storageGet(EXEC_CACHE_KEY, EXEC_CACHE_AGE);
+    const url = String(saved?.url || '').trim();
+    return /^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(url) ? url : '';
+  }
+
+  function writeExecCache(url) {
+    storageSet(EXEC_CACHE_KEY, { savedAt: Date.now(), url });
+  }
+
+  function clearExecCache() {
+    storageRemove(EXEC_CACHE_KEY);
+  }
+
+  async function resolveCliproomExecUrl(forceFresh = false) {
+    const mainApi = String(MAIN_API_URL || '').trim();
+    if (!mainApi) throw new Error('ไม่พบ URL ของ Apps Script หลัก');
+
+    if (!forceFresh) {
+      const cached = readExecCache();
+      if (cached) return cached;
+    }
+
+    let attempt = 0;
+    while (true) {
+      try {
+        const result = await jsonpRequest(mainApi, { mode: 'cliproomexec' });
+        if (!result || result.success === false) {
+          throw new Error((result && result.message) || 'อ่าน URL Cliproom จากชีตไม่สำเร็จ');
+        }
+        const execUrl = String(result.url || '').trim();
+        if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec(?:[?#].*)?$/i.test(execUrl)) {
+          throw new Error('URL Cliproom จากชีตไม่ถูกต้อง');
+        }
+        writeExecCache(execUrl);
+        return execUrl;
+      } catch (error) {
+        attempt += 1;
+        const delay = retryDelay(attempt);
+        console.warn(`Cliproom resolver retry #${attempt}:`, error);
+        if (!courses.length) {
+          track.innerHTML = `<div class="cliproom-loading">กำลังเชื่อมต่อระบบหลักสูตร...<br><small>ลองใหม่อัตโนมัติ ครั้งที่ ${attempt}</small></div>`;
+        }
+        await waitRetry(delay);
+      }
+    }
+  }
 
   function render() {
     if (!courses.length) {
-      track.innerHTML = '<div class="cliproom-loading cliproom-error">ยังโหลดรายการหลักสูตรไม่ได้<br>กรุณาตรวจสอบ URL Cliproom ในชีตและ Deployment ของ Apps Script</div>';
-      document.getElementById('cliproomDots').innerHTML = '';
+      track.innerHTML = '<div class="cliproom-loading">กำลังรอข้อมูลหลักสูตร...</div>';
+      const dots = document.getElementById('cliproomDots');
+      if (dots) dots.innerHTML = '';
       return;
     }
 
     track.innerHTML = courses.map(course => `
       <article class="cliproom-card" tabindex="0" role="link" aria-label="เปิดหลักสูตร ${esc(course.title)}">
         <span class="cliproom-cover">
-          ${course.coverUrl ? `<img src="${esc(course.coverUrl)}" alt="${esc(course.title)}" loading="lazy">` : ''}
+          ${course.coverUrl ? `<img src="${esc(course.coverUrl)}" alt="${esc(course.title)}" loading="lazy" decoding="async">` : ''}
           <span class="cliproom-play" aria-hidden="true">▶</span>
         </span>
         <div class="cliproom-body">
@@ -2632,23 +2821,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const count = Math.max(1, Math.ceil(courses.length / perPage));
     page = Math.max(0, Math.min(page, count - 1));
     const card = track.querySelector('.cliproom-card');
-    if (card) {
-      track.style.transform = `translateX(-${page * perPage * (card.getBoundingClientRect().width + 18)}px)`;
-    }
+    if (card) track.style.transform = `translateX(-${page * perPage * (card.getBoundingClientRect().width + 18)}px)`;
     const dots = document.getElementById('cliproomDots');
-    dots.innerHTML = Array.from({ length: count }, (_, i) =>
-      `<button class="cliproom-dot ${i === page ? 'active' : ''}" type="button" data-page="${i}" aria-label="หน้าที่ ${i + 1}"></button>`
-    ).join('');
-    dots.querySelectorAll('[data-page]').forEach(dot => {
-      dot.onclick = event => {
-        event.stopPropagation();
-        page = Number(dot.dataset.page);
-        update(false);
-        restart();
-      };
-    });
-    document.getElementById('cliproomPrev').disabled = page === 0;
-    document.getElementById('cliproomNext').disabled = page === count - 1;
+    if (dots) {
+      dots.innerHTML = Array.from({ length: count }, (_, i) =>
+        `<button class="cliproom-dot ${i === page ? 'active' : ''}" type="button" data-page="${i}" aria-label="หน้าที่ ${i + 1}"></button>`
+      ).join('');
+      dots.querySelectorAll('[data-page]').forEach(dot => {
+        dot.onclick = event => {
+          event.stopPropagation();
+          page = Number(dot.dataset.page);
+          update(false);
+          restart();
+        };
+      });
+    }
+    const prev = document.getElementById('cliproomPrev');
+    const next = document.getElementById('cliproomNext');
+    if (prev) prev.disabled = page === 0;
+    if (next) next.disabled = page === count - 1;
   }
 
   const openCliproom = () => window.open('cliproom.html', '_blank', 'noopener');
@@ -2665,83 +2856,84 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if (courses.length > perPage) timer = setInterval(() => move(1), 6000);
   }
 
-  function readCache(execUrl) {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-      if (!saved || saved.execUrl !== execUrl || Date.now() - saved.savedAt > CACHE_AGE) return null;
-      return saved.payload;
-    } catch (_) {
-      return null;
-    }
+  function readCatalogCache(execUrl) {
+    const saved = storageGet(CATALOG_CACHE_KEY, CATALOG_STALE_AGE);
+    if (!saved || saved.execUrl !== execUrl || !saved.payload) return null;
+    return saved.payload;
   }
 
-  function writeCache(payload) {
-    try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-        savedAt: Date.now(),
-        execUrl: activeCliproomExecUrl,
-        payload
-      }));
-    } catch (_) {}
+  function writeCatalogCache(payload) {
+    storageSet(CATALOG_CACHE_KEY, {
+      savedAt: Date.now(),
+      execUrl: activeCliproomExecUrl,
+      payload
+    });
   }
 
   function receive(payload) {
-    clearTimeout(window.__cliproomTimeout);
-    if (payload?.success && Array.isArray(payload.courses)) {
-      writeCache(payload);
-      courses = payload.courses;
-      if (!courses.length) {
-        track.innerHTML = '<div class="cliproom-loading">ยังไม่มีหลักสูตรที่เปิดใช้งาน</div>';
-        const dots = document.getElementById('cliproomDots');
-        if (dots) dots.innerHTML = '';
-        return;
-      }
-    } else {
-      courses = [];
+    if (!payload || payload.success !== true || !Array.isArray(payload.courses)) return false;
+    writeCatalogCache(payload);
+    courses = payload.courses;
+    if (!courses.length) {
+      track.innerHTML = '<div class="cliproom-loading">ยังไม่มีหลักสูตรที่เปิดใช้งาน</div>';
+      const dots = document.getElementById('cliproomDots');
+      if (dots) dots.innerHTML = '';
+      return true;
     }
     render();
     restart();
+    return true;
+  }
+
+  async function fetchCatalog(execUrl) {
+    const payload = await jsonpRequest(execUrl, { mode: 'cliproomBox' });
+    if (!payload || payload.success !== true || !Array.isArray(payload.courses)) {
+      throw new Error((payload && payload.message) || 'ข้อมูลหลักสูตรไม่สมบูรณ์');
+    }
+    return payload;
   }
 
   async function loadCatalog() {
     if (loadingStarted) return;
     loadingStarted = true;
+    let attempt = 0;
+    let cacheShown = false;
 
-    try {
-      activeCliproomExecUrl = await resolveCliproomExecUrl();
-      const cached = readCache(activeCliproomExecUrl);
-      if (cached) {
-        receive(cached);
+    while (true) {
+      try {
+        activeCliproomExecUrl = await resolveCliproomExecUrl(attempt > 0);
+
+        if (!cacheShown) {
+          const cached = readCatalogCache(activeCliproomExecUrl);
+          if (cached && receive(cached)) cacheShown = true;
+        }
+
+        const payload = await fetchCatalog(activeCliproomExecUrl);
+        receive(payload);
         return;
+      } catch (error) {
+        attempt += 1;
+        clearExecCache();
+        const delay = retryDelay(attempt);
+        console.warn(`Cliproom catalog retry #${attempt}:`, error);
+        if (!courses.length) {
+          track.innerHTML = `<div class="cliproom-loading">กำลังโหลดรายการหลักสูตร...<br><small>เชื่อมต่อไม่สำเร็จ ระบบจะลองใหม่อัตโนมัติ ครั้งที่ ${attempt}</small></div>`;
+        }
+        await waitRetry(delay);
       }
-
-      window.cliproomCatalogCallback = receive;
-      const catalogUrl = new URL(activeCliproomExecUrl);
-      catalogUrl.searchParams.set('mode', 'cliproomBox');
-      catalogUrl.searchParams.set('callback', 'cliproomCatalogCallback');
-      catalogUrl.searchParams.set('_t', String(Date.now()));
-
-      const script = document.createElement('script');
-      script.src = catalogUrl.toString();
-      script.async = true;
-      script.onerror = () => receive(null);
-      document.head.appendChild(script);
-      window.__cliproomTimeout = setTimeout(() => receive(null), 12000);
-    } catch (error) {
-      console.error('โหลด URL Cliproom ไม่สำเร็จ:', error);
-      receive(null);
     }
   }
 
-  window.cliproomCatalogCallback = receive;
-  document.getElementById('cliproomPrev').onclick = event => { event.stopPropagation(); move(-1); };
-  document.getElementById('cliproomNext').onclick = event => { event.stopPropagation(); move(1); };
+  window.cliproomCatalogCallback = payload => receive(payload);
+  const prev = document.getElementById('cliproomPrev');
+  const next = document.getElementById('cliproomNext');
+  if (prev) prev.onclick = event => { event.stopPropagation(); move(-1); };
+  if (next) next.onclick = event => { event.stopPropagation(); move(1); };
   window.addEventListener('resize', () => update(false));
 
-  if (window.SiteFast) window.SiteFast.whenNear('cliproomBox', loadCatalog);
+  if (window.SiteFast) window.SiteFast.whenNear('cliproomBox', loadCatalog, '900px 0px');
   else loadCatalog();
 })();
-
 
 /* ===== shopactivity-box.js ===== */
 (() => {

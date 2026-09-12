@@ -1,23 +1,29 @@
 (() => {
   'use strict';
 
-  const API_URL =
-    window.APP_CONFIG.API_URL;
+  const API_URL = window.APP_CONFIG.API_URL;
 
-  const HOMEFAST_CACHE_KEY = 'homefast-v8-performance';
-  const HOMEFAST_TTL = 2 * 60 * 1000;
-  const HOMEFAST_STALE_TTL = 15 * 60 * 1000;
-  const NETWORK_TIMEOUT = 15000;
+  // PERFORMANCE/RESILIENCE V10
+  // - cache-first + stale-while-revalidate
+  // - deduplicate requests
+  // - limit parallel Apps Script reads to avoid cold-start congestion
+  // - retry transient read failures until the connection succeeds
+  const HOMEFAST_CACHE_KEY = 'homefast-v10-resilient-20260912';
+  const HOMEFAST_TTL = 5 * 60 * 1000;
+  const HOMEFAST_STALE_TTL = 24 * 60 * 60 * 1000;
+  const NETWORK_TIMEOUT = 45 * 1000;
+  const MAX_CONCURRENT_READS = 2;
+  const RETRY_DELAYS = [900, 1600, 3000, 5500, 9000, 15000, 30000];
+
   const inflight = new Map();
+  const backgroundInflight = new Map();
+  const readQueue = [];
+  let activeReads = 0;
   let homeFastPromise = null;
-  let backgroundRefreshStarted = false;
 
   function isAdminMode() {
-    try {
-      return Boolean(sessionStorage.getItem('mysiteAdminToken'));
-    } catch (_) {
-      return false;
-    }
+    try { return Boolean(sessionStorage.getItem('mysiteAdminToken')); }
+    catch (_) { return false; }
   }
 
   function storageRead(storage, key, maxAgeMs) {
@@ -26,9 +32,7 @@
       const saved = JSON.parse(storage.getItem('SITE_FAST:' + key) || 'null');
       if (!saved || !saved.savedAt || Date.now() - saved.savedAt > maxAgeMs) return null;
       return saved;
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   }
 
   function readCache(key, maxAgeMs) {
@@ -43,39 +47,147 @@
     try { localStorage.setItem('SITE_FAST:' + key, payload); } catch (_) {}
   }
 
-  function withTimeout(promise, ms, message) {
-    let timer;
-    const timeout = new Promise((_, reject) => {
-      timer = window.setTimeout(() => reject(new Error(message || 'การเชื่อมต่อใช้เวลานานเกินไป')), ms);
-    });
-    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async function networkJson(url) {
-    const response = await withTimeout(fetch(url, {
-      method: 'GET',
-      cache: 'default',
-      credentials: 'omit'
-    }), NETWORK_TIMEOUT, 'Apps Script ใช้เวลาตอบกลับนานเกินไป');
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    if (result?.success === false) throw new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
-    return result;
+  function retryDelay(attempt) {
+    const base = RETRY_DELAYS[Math.min(Math.max(0, attempt - 1), RETRY_DELAYS.length - 1)];
+    return Math.round(base * (0.88 + Math.random() * 0.24));
   }
 
-  async function fetchJson(url, options = {}) {
+  async function waitForRetry(ms) {
+    if (navigator.onLine === false) {
+      await Promise.race([
+        new Promise(resolve => window.addEventListener('online', resolve, { once: true })),
+        sleep(Math.max(ms, 15000))
+      ]);
+      return;
+    }
+    if (document.visibilityState === 'hidden') {
+      await Promise.race([
+        new Promise(resolve => {
+          const onVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            document.removeEventListener('visibilitychange', onVisible);
+            resolve();
+          };
+          document.addEventListener('visibilitychange', onVisible);
+        }),
+        sleep(Math.max(ms, 10000))
+      ]);
+      return;
+    }
+    await sleep(ms);
+  }
+
+  function acquireReadSlot() {
+    if (activeReads < MAX_CONCURRENT_READS) {
+      activeReads += 1;
+      return Promise.resolve();
+    }
+    return new Promise(resolve => readQueue.push(resolve)).then(() => { activeReads += 1; });
+  }
+
+  function releaseReadSlot() {
+    activeReads = Math.max(0, activeReads - 1);
+    const next = readQueue.shift();
+    if (next) next();
+  }
+
+  function isTransientAppError(message) {
+    const text = String(message || '').toLowerCase();
+    return /timeout|timed out|temporar|try again|service invoked too many|quota|rate limit|too many|internal error|server error|ใช้เวลาตอบกลับ|ลองใหม่|ชั่วคราว/.test(text);
+  }
+
+  async function networkJsonOnce(url) {
+    await acquireReadSlot();
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), NETWORK_TIMEOUT) : null;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'default',
+        credentials: 'omit',
+        signal: controller ? controller.signal : undefined
+      });
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        if (response.status >= 400 && response.status < 500 && ![408, 425, 429].includes(response.status)) {
+          error.siteFastPermanent = true;
+        }
+        throw error;
+      }
+
+      const text = await response.text();
+      let result;
+      try { result = JSON.parse(text); }
+      catch (_) { throw new Error('Apps Script ตอบกลับไม่ใช่ JSON'); }
+
+      if (result && result.success === false) {
+        const error = new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
+        if (!isTransientAppError(error.message)) error.siteFastPermanent = true;
+        throw error;
+      }
+      return result;
+    } finally {
+      if (timer) clearTimeout(timer);
+      releaseReadSlot();
+    }
+  }
+
+  async function networkJson(url, options = {}) {
+    const forever = options.forever !== false;
+    let attempt = 0;
+    while (true) {
+      try {
+        return await networkJsonOnce(url);
+      } catch (error) {
+        if (!forever || error?.siteFastPermanent) throw error;
+        attempt += 1;
+        const delay = retryDelay(attempt);
+        console.warn(`SiteFast retry #${attempt} in ${delay}ms:`, url, error?.message || error);
+        try {
+          window.dispatchEvent(new CustomEvent('sitefast:retry', {
+            detail: { url: String(url), attempt, delay, message: String(error?.message || error || '') }
+          }));
+        } catch (_) {}
+        await waitForRetry(delay);
+      }
+    }
+  }
+
+  function refreshKeyInBackground(url, key, ttl) {
+    if (!key || isAdminMode() || backgroundInflight.has(key)) return;
+    const job = networkJson(url)
+      .then(result => { if (ttl > 0) writeCache(key, result); return result; })
+      .catch(error => console.warn('SiteFast background refresh:', key, error))
+      .finally(() => backgroundInflight.delete(key));
+    backgroundInflight.set(key, job);
+  }
+
+  function fetchJson(url, options = {}) {
     const key = String(options.key || '').trim();
     const ttl = Number(options.ttl || 0);
-    const cached = ttl > 0 ? readCache(key, ttl) : null;
-    if (cached) return cached.data;
+    const staleTtl = Number(options.staleTtl || (ttl > 0 ? Math.max(24 * 60 * 60 * 1000, ttl * 12) : 0));
+
+    const fresh = ttl > 0 && key ? readCache(key, ttl) : null;
+    if (fresh) return Promise.resolve(fresh.data);
+
+    const stale = staleTtl > 0 && key ? readCache(key, staleTtl) : null;
+    if (stale) {
+      refreshKeyInBackground(url, key, ttl);
+      return Promise.resolve(stale.data);
+    }
 
     const inflightKey = key || String(url);
     if (inflight.has(inflightKey)) return inflight.get(inflightKey);
 
     const request = networkJson(url)
       .then(result => {
-        if (ttl > 0) writeCache(key, result);
+        if (ttl > 0 && key) writeCache(key, result);
         return result;
       })
       .finally(() => inflight.delete(inflightKey));
@@ -85,35 +197,18 @@
   }
 
   function refreshHomeFastInBackground() {
-    if (backgroundRefreshStarted || isAdminMode()) return;
-    backgroundRefreshStarted = true;
-
-    const run = () => {
-      networkJson(API_URL + '?mode=homefast')
-        .then(result => writeCache(HOMEFAST_CACHE_KEY, result))
-        .catch(() => {})
-        .finally(() => { backgroundRefreshStarted = false; });
-    };
-
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(run, { timeout: 2500 });
-    } else {
-      setTimeout(run, 1200);
-    }
+    refreshKeyInBackground(API_URL + '?mode=homefast', HOMEFAST_CACHE_KEY, HOMEFAST_TTL);
   }
 
   function getHomeFast() {
     if (homeFastPromise) return homeFastPromise;
 
-    // แสดงข้อมูลจาก cache ทันที แล้ว refresh เงียบ ๆ ภายหลัง
     const fresh = readCache(HOMEFAST_CACHE_KEY, HOMEFAST_TTL);
     if (fresh) {
-      // Cache ยังสด: แสดงทันทีและไม่ยิง Apps Script ซ้ำโดยไม่จำเป็น
       homeFastPromise = Promise.resolve(fresh.data);
       return homeFastPromise;
     }
 
-    // ถ้ามี cache เก่าที่ยังไม่เกิน 15 นาที ให้ใช้ก่อน เพื่อให้หน้าแสดงทันที
     const stale = readCache(HOMEFAST_CACHE_KEY, HOMEFAST_STALE_TTL);
     if (stale) {
       homeFastPromise = Promise.resolve(stale.data);
@@ -121,13 +216,17 @@
       return homeFastPromise;
     }
 
-    // รับ promise ที่เริ่ม fetch ตั้งแต่ <head> ถ้ามี เพื่อไม่ยิงซ้ำ
     const prefetched = window.__SITE_HOMEFAST_PREFETCH;
     const request = prefetched
-      ? Promise.resolve(prefetched).then(result => {
-          if (!result || result.success === false) throw new Error(result?.message || 'homefast ไม่สำเร็จ');
-          return result;
-        })
+      ? Promise.race([
+          Promise.resolve(prefetched),
+          sleep(30000).then(() => { throw new Error('homefast prefetch timeout'); })
+        ])
+          .then(result => {
+            if (!result || result.success === false) throw new Error(result?.message || 'homefast ไม่สำเร็จ');
+            return result;
+          })
+          .catch(() => networkJson(API_URL + '?mode=homefast'))
       : networkJson(API_URL + '?mode=homefast');
 
     homeFastPromise = request
@@ -163,7 +262,11 @@
     const mode = fallbackModes[name];
     if (!mode) return undefined;
 
-    const result = await fetchMode(mode, {}, { key: `home-part-${name}`, ttl: 120000 });
+    const result = await fetchMode(mode, {}, {
+      key: `home-part-${name}`,
+      ttl: 5 * 60 * 1000,
+      staleTtl: 24 * 60 * 60 * 1000
+    });
     if (name === 'activity') return result.activities || result.data || [];
     if (name === 'boss') return result.boss || result.data || result || {};
     if (name === 'setting') return result.data || result || {};
@@ -176,11 +279,17 @@
     Object.entries(params || {}).forEach(([key, value]) => {
       if (value !== undefined && value !== null) url.searchParams.set(key, value);
     });
-    const cacheKey = options.key || `${mode}:${JSON.stringify(params || {})}`;
-    return fetchJson(url.toString(), { key: cacheKey, ttl: options.ttl || 0 });
+    const cacheKey = Object.prototype.hasOwnProperty.call(options, 'key')
+      ? String(options.key || '')
+      : `${mode}:${JSON.stringify(params || {})}`;
+    return fetchJson(url.toString(), {
+      key: cacheKey,
+      ttl: Number(options.ttl || 0),
+      staleTtl: Number(options.staleTtl || 0)
+    });
   }
 
-  function whenNear(elementOrId, callback, rootMargin = '1100px 0px') {
+  function whenNear(elementOrId, callback, rootMargin = '700px 0px') {
     const start = () => {
       const element = typeof elementOrId === 'string'
         ? document.getElementById(elementOrId)
@@ -191,7 +300,7 @@
       const runOnce = () => {
         if (started) return;
         started = true;
-        callback();
+        Promise.resolve().then(callback).catch(error => console.warn('lazy section:', error));
       };
 
       if (!('IntersectionObserver' in window)) {
@@ -200,7 +309,7 @@
       }
 
       const rect = element.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 1100) {
+      if (rect.top < window.innerHeight + 700) {
         runOnce();
         return;
       }
@@ -240,8 +349,9 @@
     getHomeFast,
     homePart,
     whenNear,
-    clear
+    clear,
+    networkJson
   };
 
-  getHomeFast().catch(() => {});
+  getHomeFast().catch(error => console.warn('homefast initial:', error));
 })();

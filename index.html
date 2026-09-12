@@ -6,7 +6,7 @@
 <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="เว็บไซต์ร้านหนังสือสไตล์ภาพประกอบ พร้อมใช้งานบน GitHub Pages" />
-  <title>ห้องสมุดประชาชนอำเภอแม่จริม</title>
+  <title>สกร.ระดับอำเภอบ่อเกลือ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <script>
     // Cold load: เริ่ม homefast เร็วตั้งแต่ <head>.
-    // Repeat load: ถ้ามี cache อายุไม่เกิน 15 นาที ไม่ยิง Apps Script ซ้ำ เพื่อให้เน็ตว่างสำหรับ CSS/รูปภาพ.
+    // Repeat load: ใช้ cache เดิมแสดงผลก่อน แล้วรีเฟรชข้อมูลเบื้องหลัง เพื่อลดการยิง Apps Script ซ้ำ.
     (function () {
-      var cacheKey = 'SITE_FAST:homefast-v8-performance';
-      var maxAge = 15 * 60 * 1000;
+      var cacheKey = 'SITE_FAST:homefast-v10-resilient-20260912';
+      var maxAge = 24 * 60 * 60 * 1000;
       var admin = false;
       try { admin = Boolean(sessionStorage.getItem('mysiteAdminToken')); } catch (_) {}
       function hasUsable(storage) {
@@ -29,12 +29,14 @@
         } catch (_) { return false; }
       }
       if (!admin && (hasUsable(window.sessionStorage) || hasUsable(window.localStorage))) return;
+      var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = controller ? setTimeout(function () { controller.abort(); }, 30000) : null;
       window.__SITE_HOMEFAST_PREFETCH = fetch(
         window.APP_CONFIG.API_URL + '?mode=homefast',
-        { method: 'GET', cache: 'default', credentials: 'omit' }
+        { method: 'GET', cache: 'default', credentials: 'omit', signal: controller ? controller.signal : undefined }
       ).then(function (response) {
         return response.ok ? response.json() : null;
-      }).catch(function () { return null; });
+      }).catch(function () { return null; }).finally(function () { if (timer) clearTimeout(timer); });
     })();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -986,6 +988,6 @@
 
   <script defer src="button-section.js?v=20260904-library-buttonsection-1"></script>
   <script defer src="book-featured.js?v=20260904-book-admin-1"></script>
-  <script defer src="index-fast.js?v=20260904-library-buttonsection-1"></script>
+  <script defer src="index-fast.js?v=20260912-performance-resilient-1"></script>
 </body>
 </html>
