@@ -2,7 +2,7 @@
 const API=window.APP_CONFIG.API_URL;
 const builtins=[
   {id:'featured',kind:'builtin',title:'หนังสือที่น่าสนใจ',visible:true},
-  {id:'learningSourceBox',kind:'builtin',title:'แหล่งเรียนรู้',visible:true},
+  {id:'learningSourceBox',kind:'builtin',title:'แหล่งบ้านหนังสือชุมชน',visible:true},
   {id:'bestPracticeBox',kind:'builtin',title:'Best Practice',visible:true},
   {id:'FBpostBox',kind:'builtin',title:'Facebook',visible:true},
   {id:'cliproomBox',kind:'builtin',title:'หลักสูตรออนไลน์',visible:true},
