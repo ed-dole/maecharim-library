@@ -1281,6 +1281,8 @@ main > .section:first-child {
 }
 </style>
   <link rel="stylesheet" href="theme-modern.css?v=20260902-1">
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 </head>
 <body class="theme-v2">
   <div id="loading" class="loading">
@@ -1539,7 +1541,6 @@ main > .section:first-child {
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
     const APP_URL = window.APP_CONFIG.API_URL;
    let appData = {
@@ -1616,15 +1617,138 @@ let detailSlideCount = 0;
       document.head.appendChild(script);
     }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  bindEvents();
 
-  try {
-    await loadLearningSheetOptions();
-    loadPublicData();
-  } catch (error) {
-    showError(error);
-  }
+
+    let qrCodeLibraryPromise_ = null;
+    function ensureQrCodeLibrary_() {
+      if (window.QRCode) return Promise.resolve(window.QRCode);
+      if (qrCodeLibraryPromise_) return qrCodeLibraryPromise_;
+
+      qrCodeLibraryPromise_ = new Promise(function(resolve, reject) {
+        const script = document.createElement('script');
+        const timer = setTimeout(function() {
+          script.remove();
+          qrCodeLibraryPromise_ = null;
+          reject(new Error('โหลด QR Code ไม่สำเร็จ'));
+        }, 12000);
+
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.async = true;
+        script.onload = function() {
+          clearTimeout(timer);
+          if (window.QRCode) resolve(window.QRCode);
+          else {
+            qrCodeLibraryPromise_ = null;
+            reject(new Error('QR Code library ไม่พร้อมใช้งาน'));
+          }
+        };
+        script.onerror = function() {
+          clearTimeout(timer);
+          qrCodeLibraryPromise_ = null;
+          reject(new Error('โหลด QR Code ไม่สำเร็จ'));
+        };
+        document.head.appendChild(script);
+      });
+
+      return qrCodeLibraryPromise_;
+    }
+
+    const LEARNING_PAGE_CACHE_VERSION = 'learning-page-fast-v3';
+    const LEARNING_PAGE_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+
+    function learningCacheKey_(suffix) {
+      return LEARNING_PAGE_CACHE_VERSION + ':' + APP_URL + ':' + String(suffix || 'default');
+    }
+
+    function readLearningCache_(suffix) {
+      try {
+        const raw = localStorage.getItem(learningCacheKey_(suffix));
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (!cached || !cached.savedAt || !cached.data) return null;
+        if (Date.now() - Number(cached.savedAt) > LEARNING_PAGE_CACHE_MAX_AGE) return null;
+        return cached.data;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function writeLearningCache_(suffix, data) {
+      try {
+        localStorage.setItem(
+          learningCacheKey_(suffix),
+          JSON.stringify({ savedAt: Date.now(), data: data })
+        );
+      } catch (e) {}
+    }
+
+    function applyLearningData_(data) {
+      appData = data || { settings: {}, sources: [], types: [], areas: [] };
+      applySettings();
+      fillAreaFilter(appData.areas);
+      fillFilters();
+      applyFilters();
+      updateStats();
+    }
+
+    function renderLearningSheetOptions_(items, selectedSpreadsheetId) {
+      const select = document.getElementById('learningSheetSelect');
+      if (!select) return;
+      const list = Array.isArray(items) ? items : [];
+      if (!list.length) {
+        select.innerHTML = '<option value="">ไม่พบรายการ</option>';
+        return;
+      }
+      select.innerHTML = list.map(function(item) {
+        return '<option value="' + escAttr(item.spreadsheetId) + '">' + esc(item.name) + '</option>';
+      }).join('');
+      select.value = String(selectedSpreadsheetId || list[0].spreadsheetId || '');
+    }
+
+    function loadLearningBootstrap() {
+      const requestedArea = String(
+        new URLSearchParams(window.location.search).get('area') || ''
+      ).trim();
+      const bootstrapKey = 'bootstrap:' + requestedArea;
+      const cached = readLearningCache_(bootstrapKey);
+      let renderedCache = false;
+
+      if (cached && cached.success === true) {
+        currentSpreadsheetId = String(cached.currentSpreadsheetId || '').trim();
+        renderLearningSheetOptions_(cached.items, currentSpreadsheetId);
+        applyLearningData_(cached);
+        setLoading(false);
+        renderedCache = true;
+      } else {
+        setLoading(true);
+      }
+
+      jsonpRequest(
+        'learningBootstrap',
+        { area: requestedArea, v: '3' },
+        function(result) {
+          const items = Array.isArray(result.items) ? result.items : [];
+          currentSpreadsheetId = String(result.currentSpreadsheetId || (items[0] && items[0].spreadsheetId) || '').trim();
+          renderLearningSheetOptions_(items, currentSpreadsheetId);
+          applyLearningData_(result);
+          writeLearningCache_(bootstrapKey, result);
+          if (currentSpreadsheetId) writeLearningCache_('data:' + currentSpreadsheetId, result);
+          setLoading(false);
+        },
+        function(error) {
+          // compatibility fallback: หาก deployment ฝั่ง Apps Script ยังเป็นรุ่นเก่า ให้ใช้ API เดิม
+          if (!renderedCache) {
+            loadLearningSheetOptions()
+              .then(function() { loadPublicData(); })
+              .catch(function(fallbackError) { showError(fallbackError || error); });
+          }
+        }
+      );
+    }
+
+document.addEventListener("DOMContentLoaded", () => {
+  bindEvents();
+  loadLearningBootstrap();
 });
 function bindEvents() {
   ['searchInput', 'areaFilter', 'categoryFilter'].forEach(id => {
@@ -1672,39 +1796,33 @@ function fillAreaFilter(areas) {
     `).join('');
 }
 function loadPublicData() {
-
   if (!currentSpreadsheetId) return;
 
-  setLoading(true);
+  const cacheSuffix = 'data:' + currentSpreadsheetId;
+  const cached = readLearningCache_(cacheSuffix);
+  let renderedCache = false;
+
+  if (cached && cached.success === true) {
+    applyLearningData_(cached);
+    setLoading(false);
+    renderedCache = true;
+  } else {
+    setLoading(true);
+  }
 
   jsonpRequest(
     'learningBox',
-
-    {
-      spreadsheetId: currentSpreadsheetId
-    },
-
+    { spreadsheetId: currentSpreadsheetId, v: '3' },
     function(data) {
-
-      appData = data || {
-        settings: {},
-        sources: [],
-        types: [],
-        areas: []
-      };
-
-      applySettings();
-      fillAreaFilter(appData.areas);
-      fillFilters();
-      applyFilters();
-      updateStats();
-
+      applyLearningData_(data);
+      writeLearningCache_(cacheSuffix, data);
       setLoading(false);
     },
-
     function(error) {
-      setLoading(false);
-      showError(error);
+      if (!renderedCache) {
+        setLoading(false);
+        showError(error);
+      }
     }
   );
 }
@@ -2326,12 +2444,21 @@ function renderDetail(s) {
 
       qrBox.innerHTML = '';
 
-      new QRCode(qrBox, {
-        text: learnMoreUrl,
-        width: 190,
-        height: 190,
-        correctLevel: QRCode.CorrectLevel.H
-      });
+      ensureQrCodeLibrary_()
+        .then(function(QRCodeClass) {
+          if (!document.body.contains(qrBox)) return;
+          new QRCodeClass(qrBox, {
+            text: learnMoreUrl,
+            width: 190,
+            height: 190,
+            correctLevel: QRCodeClass.CorrectLevel.H
+          });
+        })
+        .catch(function() {
+          if (document.body.contains(qrBox)) {
+            qrBox.innerHTML = '<div style="color:#64748b;font-size:13px">ไม่สามารถสร้าง QR Code ได้</div>';
+          }
+        });
     }, 50);
   }
 }
