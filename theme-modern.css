@@ -539,7 +539,6 @@ body.theme-v2 .topbar .brand-sub {
 body.theme-v2 .topbar .btn-primary,
 body.theme-v2 .learning-area-selector,
 body.theme-v2 .filter-bar .btn-primary {
-  background: linear-gradient(135deg, #4f46e5, #06b6d4);
   color: #fff;
 }
 
