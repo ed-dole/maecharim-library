@@ -52,12 +52,12 @@
         data-source-id="${escAttr(source.id)}"
         data-source-index="${index}"
         style="left:${x}%;top:${y}%;--lsb-source-color:${escAttr(color)}"
-        aria-label="${escAttr(source.name || 'บ้านหนังสือชุมชน')}"
+        aria-label="${escAttr(source.name || 'แหล่งส่งเสริมการอ่านในชุมชน')}"
       >
         <span class="lsb-source-pin" aria-hidden="true">
           <i class="fa-solid fa-location-dot"></i>
         </span>
-        <span class="lsb-source-marker-name">${esc(source.name || 'บ้านหนังสือชุมชน')}</span>
+        <span class="lsb-source-marker-name">${esc(source.name || 'แหล่งส่งเสริมการอ่านในชุมชน')}</span>
 
         <span class="lsb-source-popup" role="tooltip">
           ${image ? `
@@ -66,7 +66,7 @@
             <span class="lsb-source-popup-noimage">ไม่มีรูปภาพ</span>
           `}
           <span class="lsb-source-popup-body">
-            <strong>${esc(source.name || 'บ้านหนังสือชุมชน')}</strong>
+            <strong>${esc(source.name || 'แหล่งส่งเสริมการอ่านในชุมชน')}</strong>
             ${source.category ? `<small><i class="fa-solid fa-tag"></i>${esc(source.category)}</small>` : ''}
             ${source.address ? `<small><i class="fa-solid fa-location-dot"></i>${esc(source.address)}</small>` : ''}
             <span class="lsb-source-popup-stats">
@@ -89,7 +89,7 @@
         data-source-index="${index}"
         tabindex="0"
         role="button"
-        aria-label="ดูรายละเอียด ${escAttr(source.name || 'บ้านหนังสือชุมชน')}"
+        aria-label="ดูรายละเอียด ${escAttr(source.name || 'แหล่งส่งเสริมการอ่านในชุมชน')}"
       >
         <div class="lsb-source-slide-image">
           ${image ? `
@@ -100,7 +100,7 @@
           ${source.category ? `<span class="lsb-source-slide-category">${esc(source.category)}</span>` : ''}
         </div>
         <div class="lsb-source-slide-info">
-          <strong>${esc(source.name || 'บ้านหนังสือชุมชน')}</strong>
+          <strong>${esc(source.name || 'แหล่งส่งเสริมการอ่านในชุมชน')}</strong>
           <span>
             <i class="fa-solid fa-star" aria-hidden="true"></i>
             ${formatNumber(source.averageRating || 0)}
@@ -127,9 +127,9 @@
     grid.innerHTML = `
       <div class="lsb-map-explorer">
         <div class="lsb-main-map-wrap">
-          <div class="lsb-main-map" aria-label="${escAttr(currentArea.mapTitle || 'แผนที่บ้านหนังสือชุมชน')}">
+          <div class="lsb-main-map" aria-label="${escAttr(currentArea.mapTitle || 'แผนที่แหล่งส่งเสริมการอ่านในชุมชน')}">
             ${mapImage ? `
-              <img class="lsb-main-map-image" src="${escAttr(mapImage)}" alt="${escAttr(currentArea.mapTitle || currentArea.name || 'แผนที่บ้านหนังสือชุมชน')}">
+              <img class="lsb-main-map-image" src="${escAttr(mapImage)}" alt="${escAttr(currentArea.mapTitle || currentArea.name || 'แผนที่แหล่งส่งเสริมการอ่านในชุมชน')}">
             ` : `
               <div class="lsb-main-map-empty">
                 <i class="fa-regular fa-map"></i>
@@ -142,8 +142,8 @@
             </div>
 
             <div class="lsb-map-summary">
-              <strong>${esc(currentArea.mapTitle || currentArea.name || 'แผนที่บ้านหนังสือชุมชน')}</strong>
-              <span>${formatNumber(sources.length)} บ้านหนังสือชุมชน</span>
+              <strong>${esc(currentArea.mapTitle || currentArea.name || 'แผนที่แหล่งส่งเสริมการอ่านในชุมชน')}</strong>
+              <span>${formatNumber(sources.length)} แหล่งส่งเสริมการอ่านในชุมชน</span>
             </div>
           </div>
         </div>
@@ -151,7 +151,7 @@
         <div class="lsb-source-carousel" ${sources.length ? '' : 'hidden'}>
           <div class="lsb-source-carousel-heading">
             <div>
-              <span>รายการบ้านหนังสือชุมชน</span>
+              <span>รายการแหล่งส่งเสริมการอ่านในชุมชน</span>
               <strong>${formatNumber(sources.length)} แห่ง</strong>
             </div>
             <small>เลื่อนดูรายการ หรือวางเมาส์ที่หมุดบนภาพ</small>
@@ -175,7 +175,7 @@
         </div>
 
         ${sources.length ? '' : `
-          <div class="lsb-empty">ยังไม่มีรายการบ้านหนังสือชุมชนในชีต บ้านหนังสือชุมชน</div>
+          <div class="lsb-empty">ยังไม่มีรายการแหล่งส่งเสริมการอ่านในชุมชนในชีต แหล่งส่งเสริมการอ่านในชุมชน</div>
         `}
       </div>
     `;
@@ -274,7 +274,7 @@
 
     const areas = Array.isArray(result.areas) ? result.areas : [];
     if (!areas.length) {
-      grid.innerHTML = '<div class="lsb-loading">ยังไม่มีข้อมูลบ้านหนังสือชุมชน</div>';
+      grid.innerHTML = '<div class="lsb-loading">ยังไม่มีข้อมูลแหล่งส่งเสริมการอ่านในชุมชน</div>';
       return;
     }
 
@@ -288,7 +288,7 @@
       return;
     }
 
-    grid.innerHTML = '<div class="lsb-loading">กำลังโหลดบ้านหนังสือชุมชน...</div>';
+    grid.innerHTML = '<div class="lsb-loading">กำลังโหลดแหล่งส่งเสริมการอ่านในชุมชน...</div>';
 
     if (window.SiteFast) {
       window.SiteFast.fetchMode('learningAreas', { v: '7' }, {

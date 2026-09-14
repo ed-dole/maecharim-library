@@ -4,7 +4,7 @@
   
     <script src="app-config.js?v=20260901-central-api-1"></script>
 <meta charset="UTF-8">
-  <title>แหล่งบ้านหนังสือชุมชน</title>
+  <title>แหล่งส่งเสริมการอ่านในชุมชน</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -800,7 +800,7 @@ th{background:#f8fafc;font-size:13px;color:#475569;position:sticky;top:0}
   box-shadow:0 0 0 2px rgba(15,23,42,.12);
 }
 
-/* ป้ายชื่อบ้านหนังสือชุมชน */
+/* ป้ายชื่อแหล่งส่งเสริมการอ่านในชุมชน */
 .marker-name{
   position:absolute;
   z-index:30;
@@ -1285,7 +1285,7 @@ main > .section:first-child {
 <body class="theme-v2">
   <div id="loading" class="loading">
     <div class="spinner"></div>
-    <b>กำลังโหลดข้อมูลบ้านหนังสือชุมชน...</b>
+    <b>กำลังโหลดข้อมูลแหล่งส่งเสริมการอ่านในชุมชน...</b>
   </div>
 
   <header class="topbar">
@@ -1293,8 +1293,8 @@ main > .section:first-child {
       <div class="brand">
         <img id="siteLogo" alt="logo">
         <div>
-          <div id="brandTitle" class="brand-title">แหล่งบ้านหนังสือชุมชน</div>
-          <div id="brandSub" class="brand-sub">ระบบฐานข้อมูลบ้านหนังสือชุมชน</div>
+          <div id="brandTitle" class="brand-title">แหล่งส่งเสริมการอ่านในชุมชน</div>
+          <div id="brandSub" class="brand-sub">ระบบฐานข้อมูลแหล่งส่งเสริมการอ่านในชุมชน</div>
         </div>
       </div>
       <div class="nav-actions">
@@ -1314,10 +1314,10 @@ main > .section:first-child {
             ค้นพบองค์ความรู้ใกล้ตัวคุณ
         </span>
 
-        <h1 id="heroTitle">แหล่งบ้านหนังสือชุมชน</h1>
+        <h1 id="heroTitle">แหล่งส่งเสริมการอ่านในชุมชน</h1>
 
         <p>
-            สำรวจบ้านหนังสือชุมชน จุดส่งเสริมการอ่าน และพื้นที่เรียนรู้ใกล้บ้าน
+            สำรวจแหล่งส่งเสริมการอ่านในชุมชน จุดส่งเสริมการอ่าน และพื้นที่เรียนรู้ใกล้บ้าน
             พร้อมข้อมูลผู้ดูแล ที่ตั้ง และรายละเอียดการให้บริการ
             ผ่านแผนที่แบบโต้ตอบ
         </p>
@@ -1326,7 +1326,7 @@ main > .section:first-child {
 
   <div class="glass-card">
     <strong id="sourceCount">0</strong>
-    <span>บ้านหนังสือชุมชน</span>
+    <span>แหล่งส่งเสริมการอ่านในชุมชน</span>
   </div>
 
   <div class="glass-card">
@@ -1352,7 +1352,7 @@ main > .section:first-child {
     <!-- ฝั่งซ้าย -->
     <div>
       <h2 id="mapTitle" class="section-title">
-        แผนที่บ้านหนังสือชุมชน
+        แผนที่แหล่งส่งเสริมการอ่านในชุมชน
       </h2>
 
       <p class="section-sub">
@@ -1387,7 +1387,7 @@ main > .section:first-child {
 
       <img
         id="mapImage"
-        alt="แผนที่บ้านหนังสือชุมชน">
+        alt="แผนที่แหล่งส่งเสริมการอ่านในชุมชน">
 
       <div id="markers"></div>
 
@@ -1402,12 +1402,12 @@ main > .section:first-child {
     <section class="filter-bar places-filter-bar">
 
       <div class="field">
-        <label>ค้นหาบ้านหนังสือชุมชน</label>
+        <label>ค้นหาแหล่งส่งเสริมการอ่านในชุมชน</label>
 
         <input
           id="searchInput"
           class="control"
-          placeholder="ค้นหาจากชื่อ ผู้ดูแลบ้านหนังสือชุมชน หรือที่ตั้ง">
+          placeholder="ค้นหาจากชื่อ ผู้ดูแลแหล่งส่งเสริมการอ่านในชุมชน หรือที่ตั้ง">
       </div>
 
       <div class="field">
@@ -1424,14 +1424,14 @@ main > .section:first-child {
       </div>
 
       <div class="field">
-        <label>ประเภทบ้านหนังสือชุมชน</label>
+        <label>ประเภทแหล่งส่งเสริมการอ่านในชุมชน</label>
 
         <select
           id="categoryFilter"
           class="control">
 
           <option value="">
-            ทุกประเภทบ้านหนังสือชุมชน
+            ทุกประเภทแหล่งส่งเสริมการอ่านในชุมชน
           </option>
         </select>
       </div>
@@ -1459,7 +1459,7 @@ main > .section:first-child {
       <div class="section-head">
         <div>
           <h2 class="section-title">
-            รายการบ้านหนังสือชุมชน
+            รายการแหล่งส่งเสริมการอ่านในชุมชน
           </h2>
 
           <p
@@ -1498,7 +1498,7 @@ main > .section:first-child {
 </main>
 
   <footer class="footer">
-    <div class="container">ระบบแหล่งบ้านหนังสือชุมชน • พัฒนาด้วย Google Apps Script และ Google Sheets</div>
+    <div class="container">ระบบแหล่งส่งเสริมการอ่านในชุมชน • พัฒนาด้วย Google Apps Script และ Google Sheets</div>
   </footer>
 
   <div id="detailModal" class="modal hidden" onclick="modalBackdrop(event)">
@@ -1713,10 +1713,10 @@ function loadPublicData() {
       const s = appData.settings || {};
       document.documentElement.style.setProperty('--primary', s.primary_color || '#2563eb');
       document.getElementById('siteLogo').src = s.logo_url || '';
-      document.getElementById('brandTitle').textContent = s.system_name || 'แหล่งบ้านหนังสือชุมชน';
+      document.getElementById('brandTitle').textContent = s.system_name || 'แหล่งส่งเสริมการอ่านในชุมชน';
       document.getElementById('brandSub').textContent = s.organization || '';
-      document.getElementById('heroTitle').textContent = s.system_name || 'แหล่งบ้านหนังสือชุมชน';
-      document.getElementById('mapTitle').textContent = s.map_title || 'แผนที่บ้านหนังสือชุมชน';
+      document.getElementById('heroTitle').textContent = s.system_name || 'แหล่งส่งเสริมการอ่านในชุมชน';
+      document.getElementById('mapTitle').textContent = s.map_title || 'แผนที่แหล่งส่งเสริมการอ่านในชุมชน';
       document.getElementById('mapImage').src = s.map_image_url || '';
     }
 
@@ -1738,7 +1738,7 @@ function fillFilters() {
     ].sort((a,b)=>a.localeCompare(b,"th"));
 
     categorySelect.innerHTML =
-        '<option value="">ทุกประเภทบ้านหนังสือชุมชน</option>' +
+        '<option value="">ทุกประเภทแหล่งส่งเสริมการอ่านในชุมชน</option>' +
         categoryList.map(item => `
             <option value="${escAttr(item)}">
                 ${esc(item)}
@@ -1884,7 +1884,7 @@ function getMarkerLabelClass(index) {
       document.getElementById('resultText').textContent = `พบ ${filteredSources.length} รายการ`;
 
       if (!filteredSources.length) {
-        box.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-magnifying-glass" style="font-size:36px"></i><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา พื้นที่ หรือประเภทบ้านหนังสือชุมชน</p></div>';
+        box.innerHTML = '<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-magnifying-glass" style="font-size:36px"></i><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา พื้นที่ หรือประเภทแหล่งส่งเสริมการอ่านในชุมชน</p></div>';
         return;
       }
 
@@ -2126,7 +2126,7 @@ function renderDetail(s) {
             style="margin-top:20px">
 
             <div class="info-row">
-              <b>ผู้ดูแลบ้านหนังสือชุมชน</b>
+              <b>ผู้ดูแลแหล่งส่งเสริมการอ่านในชุมชน</b>
               <span>${esc(s.manager || '-')}</span>
             </div>
 
@@ -2348,7 +2348,7 @@ function renderDetail(s) {
 
     function submitReviewForm() {
       if (!activeRating) return toast('กรุณาเลือกคะแนนความพึงพอใจ');
-      if (!activeReviewSource) return toast('ไม่พบรายการบ้านหนังสือชุมชน');
+      if (!activeReviewSource) return toast('ไม่พบรายการแหล่งส่งเสริมการอ่านในชุมชน');
       if (!currentSpreadsheetId) return toast('ไม่พบฐานข้อมูลของพื้นที่');
 
       setLoading(true);
@@ -2432,7 +2432,7 @@ function updateStats() {
     ? appData.types
     : [];
 
-  // จำนวนบ้านหนังสือชุมชนทั้งหมด
+  // จำนวนแหล่งส่งเสริมการอ่านในชุมชนทั้งหมด
   const sourceCountEl =
     document.getElementById('sourceCount');
 
